@@ -97,12 +97,12 @@
     <SourcePath>$(ProjectDir)\src;$(SourcePath);</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)\h;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\src;$(IncludePath)</IncludePath>
     <SourcePath>$(ProjectDir)\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <SourcePath>$(ProjectDir)\src;$(VC_SourcePath);</SourcePath>
-    <IncludePath>$(ProjectDir)\h;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(ProjectDir)\src;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

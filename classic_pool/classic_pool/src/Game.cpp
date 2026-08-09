@@ -1,43 +1,50 @@
 #include "Game.hpp"
+#include "physics/Physics.hpp"
+
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/Mouse.hpp>
+#include <SFML/System/Clock.hpp>
+#include <algorithm>
+#include <iostream>
+
+namespace
+{
+    constexpr float FIXED_DT = 1.0f / 120.0f;
+    constexpr float MAX_SHOT_POWER = 2.0f;
+}
 
 /// <summary>
 /// Game constructor.
 /// </summary>
-Game::Game() : window{ sf::VideoMode{ { 1920, 1080 }, 32 }, "Classic Pool", sf::Style::Resize }
+Game::Game() : window(sf::VideoMode({ 1920, 1080 }), "Classic Pool"), view(sf::FloatRect({ 0.0f, 0.0f }, { 2.84f, 1.42f })), cueBall({ 0.71f, 0.71f })
 {
-
+    window.setView(view);
 }
 
 /// <summary>
-/// Game destructor.
-/// </summary>
-Game::~Game()
-{
-
-}
-
-/// <summary>
-/// Run.
+/// Run application.
 /// </summary>
 void Game::run()
 {
-	sf::Clock clock;
-	sf::Time timeSinceLastUpdate = sf::Time::Zero;
-	sf::Time timePerFrame = sf::seconds(1.0f / 120.0f);
+    sf::Clock clock;
+    float accumulator = 0.0f;
 
-	while (this->window.isOpen() && !this->exitGame)
-	{
-		timeSinceLastUpdate += clock.restart();
+    while (window.isOpen() && running)
+    {
+        const float frameTime = clock.restart().asSeconds();
 
-		while (timeSinceLastUpdate > timePerFrame)
-		{
-			timeSinceLastUpdate -= timePerFrame;
-			processEvents();
-			update(timePerFrame);	
-		}		
+        // Avoid the simulation exploding after the window is dragged/minimized/etc
+        accumulator += std::min(frameTime, 0.25f);
+        processEvents();
 
-		draw();
-	}
+        while (accumulator >= FIXED_DT)
+        {
+            update(FIXED_DT);
+            accumulator -= FIXED_DT;
+        }
+
+        render();
+    }
 }
 
 /// <summary>
@@ -45,41 +52,74 @@ void Game::run()
 /// </summary>
 void Game::processEvents()
 {
-	while (auto event = window.pollEvent())
-	{
-		if (event->is<sf::Event::Closed>())
-		{
-			window.close();
-		}
+    while (const std::optional event = window.pollEvent())
+    {
+        if (event->is<sf::Event::Closed>())
+        {
+            window.close();
+        }
 
-		if (event->is<sf::Event::KeyPressed>())
-		{
-			const auto *key = event->getIf<sf::Event::KeyPressed>();
+        if (const auto *keyPressed = event->getIf<sf::Event::KeyPressed>())
+        {
+            if (keyPressed->code == sf::Keyboard::Key::Escape)
+            {
+                window.close();
+            }
+        }
 
-			if (key && key->scancode == sf::Keyboard::Scan::Escape)
-			{
-				exitGame = true;
-			}
-		}
-	}
+        if (const auto *mousePressed = event->getIf<sf::Event::MouseButtonPressed>())
+        {
+            if (mousePressed->button == sf::Mouse::Button::Left)
+            {
+                std::cout << "Click!" << std::endl;
+                shootCueBall(mousePressed->position);
+            }
+        }
+    }
 }
 
 /// <summary>
 /// Update.
 /// </summary>
 /// <param name="dt">Delta time.</param>
-void Game::update(sf::Time dt)
+void Game::update(float dt)
 {
-
+    Physics::updateBall(cueBall, table, dt);
 }
 
 /// <summary>
-/// Draw.
+/// Render everything.
 /// </summary>
-void Game::draw()
+void Game::render()
 {
-	this->window.clear();
+    window.clear(sf::Color(20, 20, 20));
 
-	this->window.display();
+    table.render(window);
+    cueBall.render(window);
+
+    window.display();
 }
 
+/// <summary>
+/// Shoot the cue ball/take shot.
+/// </summary>
+/// <param name="mousePosition">The current mouse position.</param>
+void Game::shootCueBall(sf::Vector2i mousePosition)
+{
+    if (cueBall.isMoving())
+    {
+        std::cout << "Ball is already moving\n";
+        return;
+    }
+
+    const sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePosition);
+    const sf::Vector2f direction = mouseWorld - cueBall.getPosition();
+
+    if (direction.length() < 0.0001f)
+    {
+        return;
+    }
+
+    const sf::Vector2f normalised = direction.normalized();
+    cueBall.setVelocity(normalised * MAX_SHOT_POWER);
+}

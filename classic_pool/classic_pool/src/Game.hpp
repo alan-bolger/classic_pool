@@ -1,25 +1,31 @@
 #ifndef GAME_HPP
 #define GAME_HPP
 
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/View.hpp>
+
+#include "physics/Ball.hpp"
+#include "game/Table.hpp"
 
 class Game
 {
-public:
-	Game();
-	~Game();
-	void run();
+    public:
 
-private:
-	sf::RenderWindow window;
-	bool exitGame{ false };
-	float width = 2.84f;
-	float height = 1.42f;
-	float radius = 0.0285f;
+    Game();
+    void run();
 
-	void processEvents();
-	void update(sf::Time dt);
-	void draw();
+    private:
+
+    sf::RenderWindow window;
+    sf::View view;
+    Table table;
+    Ball cueBall;
+    bool running = true;
+
+    void processEvents();
+    void update(float dt);
+    void render();
+    void shootCueBall(sf::Vector2i mousePosition);
 };
 
-#endif // !GAME_H
+#endif // !GAME_HPP

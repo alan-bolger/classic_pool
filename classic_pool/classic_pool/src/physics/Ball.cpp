@@ -84,7 +84,7 @@ void Ball::setPosition(sf::Vector2f position)
 /// <param name="velocity">The ball's new velocity.</param>
 void Ball::setVelocity(sf::Vector2f velocity)
 {
-    velocity = velocity;
+    this->velocity = velocity;
 }
 
 /// <summary>
