@@ -1,5 +1,5 @@
-#ifndef GAME_H
-#define GAME_H
+#ifndef GAME_HPP
+#define GAME_HPP
 
 #include <SFML/Graphics.hpp>
 
@@ -13,6 +13,9 @@ public:
 private:
 	sf::RenderWindow window;
 	bool exitGame{ false };
+	float width = 2.84f;
+	float height = 1.42f;
+	float radius = 0.0285f;
 
 	void processEvents();
 	void update(sf::Time dt);
