@@ -1,5 +1,4 @@
 #include "Game.hpp"
-#include <windows.h>
 
 /// <summary>
 /// The Main function - Without this, you are completely fucked.
