@@ -19,11 +19,21 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="h\Game.h" />
+    <ClCompile Include="src\Game.cpp" />
+    <ClCompile Include="src\game\Cue.cpp" />
+    <ClCompile Include="src\game\Table.cpp" />
+    <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\physics\Ball.cpp" />
+    <ClCompile Include="src\physics\Physics.cpp" />
+    <ClCompile Include="src\rendering\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Game.cpp" />
-    <ClCompile Include="src\Main.cpp" />
+    <ClInclude Include="src\Game.hpp" />
+    <ClInclude Include="src\game\Cue.hpp" />
+    <ClInclude Include="src\game\Table.hpp" />
+    <ClInclude Include="src\physics\Ball.hpp" />
+    <ClInclude Include="src\physics\Physics.hpp" />
+    <ClInclude Include="src\rendering\Renderer.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
