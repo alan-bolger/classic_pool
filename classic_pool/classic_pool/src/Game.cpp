@@ -23,7 +23,7 @@ void Game::run()
 {
 	sf::Clock clock;
 	sf::Time timeSinceLastUpdate = sf::Time::Zero;
-	sf::Time timePerFrame = sf::seconds(1.f / 60.0f);
+	sf::Time timePerFrame = sf::seconds(1.0f / 120.0f);
 
 	while (this->window.isOpen() && !this->exitGame)
 	{

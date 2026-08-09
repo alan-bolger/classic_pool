@@ -5,13 +5,19 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Game">
+      <UniqueIdentifier>{0dc27ca4-f964-45b9-9e34-e3ccc9cafae9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Physics">
+      <UniqueIdentifier>{4d186595-f7c0-469c-b1a2-45c045a2daf8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Rendering">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -21,10 +27,40 @@
     <ClCompile Include="src\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\game\Cue.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="src\game\Table.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="src\physics\Ball.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\physics\Physics.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\Renderer.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Game.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\game\Cue.hpp">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="src\game\Table.hpp">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\Ball.hpp">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\Physics.hpp">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\Renderer.hpp">
+      <Filter>Rendering</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
