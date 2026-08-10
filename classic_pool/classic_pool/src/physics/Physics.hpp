@@ -1,5 +1,6 @@
-#ifndef PHYSICS_HPP
-#define PHYSICS_HPP
+#pragma once
+
+#include <vector>
 
 #include "Ball.hpp"
 #include "game/Table.hpp"
@@ -7,12 +8,26 @@
 class Physics
 {
     public:
-
-    static void updateBall(Ball &ball, const Table &table, float dt);
+    static void update(
+        std::vector<Ball> &balls,
+        const Table &table,
+        float dt
+    );
 
     private:
+    static void updateBall(
+        Ball &ball,
+        const Table &table,
+        float dt
+    );
 
-    static void resolveTableCollision(Ball &ball, const Table &table);
+    static void resolveBallCollision(
+        Ball &a,
+        Ball &b
+    );
+
+    static void resolveTableCollision(
+        Ball &ball,
+        const Table &table
+    );
 };
-
-#endif // !PHYSICS_HPP

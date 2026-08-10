@@ -16,9 +16,17 @@ namespace
 /// <summary>
 /// Game constructor.
 /// </summary>
-Game::Game() : window(sf::VideoMode({ 1920, 1080 }), "Classic Pool"), view(sf::FloatRect({ 0.0f, 0.0f }, { 2.84f, 1.42f })), cueBall({ 0.71f, 0.71f })
+Game::Game() : window(sf::VideoMode({ 1920, 1080 }), "Classic Pool"), view(sf::FloatRect({ 0.0f, 0.0f }, { 2.84f, 1.42f }))
 {
     window.setView(view);
+
+    balls.emplace_back(
+        sf::Vector2f{ 0.71f, 0.71f }
+    );
+
+    balls.emplace_back(
+        sf::Vector2f{ 1.40f, 0.71f }
+    );
 }
 
 /// <summary>
@@ -84,7 +92,7 @@ void Game::processEvents()
 /// <param name="dt">Delta time.</param>
 void Game::update(float dt)
 {
-    Physics::updateBall(cueBall, table, dt);
+    Physics::update(balls, table, dt);
 }
 
 /// <summary>
@@ -95,7 +103,11 @@ void Game::render()
     window.clear(sf::Color(20, 20, 20));
 
     table.render(window);
-    cueBall.render(window);
+
+    for (const Ball &ball : balls)
+    {
+        ball.render(window);
+    }
 
     window.display();
 }
@@ -106,6 +118,8 @@ void Game::render()
 /// <param name="mousePosition">The current mouse position.</param>
 void Game::shootCueBall(sf::Vector2i mousePosition)
 {
+	Ball &cueBall = balls[0];
+
     if (cueBall.isMoving())
     {
         std::cout << "Ball is already moving\n";

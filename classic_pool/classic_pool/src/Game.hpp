@@ -19,7 +19,7 @@ class Game
     sf::RenderWindow window;
     sf::View view;
     Table table;
-    Ball cueBall;
+	std::vector<Ball> balls;
     bool running = true;
 
     void processEvents();
