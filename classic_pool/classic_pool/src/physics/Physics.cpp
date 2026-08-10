@@ -11,7 +11,7 @@ void Physics::update(std::vector<Ball> &balls, const Table &table, float dt)
     // Update movement and cushion collisions
     for (Ball &ball : balls)
     {
-        if (!ball.isMoving())
+        if (!ball.isActive())
         {
             continue;
         }
@@ -22,8 +22,18 @@ void Physics::update(std::vector<Ball> &balls, const Table &table, float dt)
     // Check every unique pair of balls
     for (std::size_t i = 0; i < balls.size(); ++i)
     {
+        if (!balls[i].isActive())
+        {
+            continue;
+        }
+
         for (std::size_t j = i + 1; j < balls.size(); ++j)
         {
+            if (!balls[j].isActive())
+            {
+                continue;
+            }
+
             resolveBallCollision(balls[i], balls[j]);
         }
     }
@@ -37,7 +47,14 @@ void Physics::update(std::vector<Ball> &balls, const Table &table, float dt)
 /// <param name="dt">Delta time.</param>
 void Physics::updateBall(Ball &ball, const Table &table, float dt)
 {
-    ball.update(dt);
+    ball.update(dt);    
+    resolvePocketCollision(ball, table);
+
+    if (!ball.isActive())
+    {
+        return;
+    }
+
     resolveTableCollision(ball, table);
 }
 
@@ -149,4 +166,32 @@ void Physics::resolveTableCollision(Ball &ball, const Table &table)
 
     ball.setPosition(position);
     ball.setVelocity(velocity);
+}
+
+/// <summary>
+/// Resolve pocket collision for a single ball.
+/// </summary>
+/// <param name="ball">A reference to the ball.</param>
+/// <param name="table">A reference to the table.</param>
+void Physics::resolvePocketCollision(Ball &ball, const Table &table)
+{
+    if (!ball.isActive())
+    {
+        return;
+    }
+
+    const float pocketRadius = table.getPocketRadius();
+    const float ballRadius = ball.getRadius();
+
+    for (const sf::Vector2f &pocket : table.getPockets())
+    {
+        const sf::Vector2f difference = ball.getPosition() - pocket;
+        const float distance = difference.length();
+
+        if (distance < pocketRadius)
+        {
+            ball.setActive(false);
+            return;
+        }
+    }
 }
