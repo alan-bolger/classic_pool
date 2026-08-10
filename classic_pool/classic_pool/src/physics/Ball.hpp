@@ -17,6 +17,7 @@ class Ball
     sf::Vector2f getVelocity() const;
     void setPosition(sf::Vector2f position);
     void setVelocity(sf::Vector2f velocity);
+	void setColour(sf::Color colour);
     float getRadius() const;
     bool isMoving() const;
 
