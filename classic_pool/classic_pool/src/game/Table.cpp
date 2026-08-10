@@ -20,6 +20,16 @@ Table::Table()
     pockets[3] = { min.x, max.y }; // Bottom-left    
     pockets[4] = { (min.x + max.x) * 0.5f, max.y }; // Bottom-middle    
     pockets[5] = { max.x, max.y }; // Bottom-right
+
+	// Set cushion positions
+    const float pocketGap = pocketRadius * 1.5f;
+
+	cushions[0] = { { min.x + pocketGap, min.y }, { (min.x + max.x) * 0.5f - pocketGap, min.y } }; // Top-left
+	cushions[1] = { { (min.x + max.x) * 0.5f + pocketGap, min.y }, { max.x - pocketGap, min.y } }; // Top-right
+	cushions[2] = { { min.x + pocketGap, max.y }, { (min.x + max.x) * 0.5f - pocketGap, max.y } }; // Bottom-left
+	cushions[3] = { { (min.x + max.x) * 0.5f + pocketGap, max.y }, { max.x - pocketGap, max.y } }; // Bottom-right
+	cushions[4] = { { min.x, min.y + pocketGap }, { min.x, max.y - pocketGap } }; // Left
+	cushions[5] = { { max.x, min.y + pocketGap }, { max.x, max.y - pocketGap } }; // Right
 }
 
 /// <summary>
@@ -76,4 +86,13 @@ const std::array<sf::Vector2f, 6> &Table::getPockets() const
 float Table::getPocketRadius() const
 {
     return pocketRadius;
+}
+
+/// <summary>
+/// Returns a const reference to the table's array of six cushions.
+/// </summary>
+/// <returns>A const reference to the std::array<Cushion, 6> containing the Table's cushions.</returns>
+const std::array<Cushion, 6> &Table::getCushions() const
+{
+	return cushions;
 }
