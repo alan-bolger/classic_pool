@@ -5,7 +5,6 @@
 #include <SFML/Window/Mouse.hpp>
 #include <SFML/System/Clock.hpp>
 #include <algorithm>
-#include <iostream>
 
 namespace
 {
@@ -19,14 +18,7 @@ namespace
 Game::Game() : window(sf::VideoMode({ 1920, 1080 }), "Classic Pool"), view(sf::FloatRect({ 0.0f, 0.0f }, { 2.84f, 1.42f }))
 {
     window.setView(view);
-
-    balls.emplace_back(
-        sf::Vector2f{ 0.71f, 0.71f }
-    );
-
-    balls.emplace_back(
-        sf::Vector2f{ 1.40f, 0.71f }
-    );
+    createRack();
 }
 
 /// <summary>
@@ -79,7 +71,6 @@ void Game::processEvents()
         {
             if (mousePressed->button == sf::Mouse::Button::Left)
             {
-                std::cout << "Click!" << std::endl;
                 shootCueBall(mousePressed->position);
             }
         }
@@ -113,6 +104,37 @@ void Game::render()
 }
 
 /// <summary>
+/// Create the rack of balls at the start of the game.
+/// </summary>
+void Game::createRack()
+{
+    balls.clear();
+
+    // Cue ball
+    balls.emplace_back(sf::Vector2f{ 0.71f, 0.71f });
+    constexpr int rows = 5;
+    const float spacing = 0.060f;
+    const sf::Vector2f rackOrigin{ 1.85f, 0.71f };
+
+    for (int row = 0; row < rows; ++row)
+    {
+        for (int column = 0; column <= row; ++column)
+        {
+            const float x = rackOrigin.x + row * spacing;
+            const float y = rackOrigin.y + (column - row * 0.5f) * spacing;
+            balls.emplace_back(sf::Vector2f{ x, y });
+        }
+    }
+
+	balls[0].setColour(sf::Color::White);
+
+    for (std::size_t i = 1; i < balls.size(); ++i)
+    {
+        balls[i].setColour(sf::Color::Yellow);
+	}
+}
+
+/// <summary>
 /// Shoot the cue ball/take shot.
 /// </summary>
 /// <param name="mousePosition">The current mouse position.</param>
@@ -122,7 +144,6 @@ void Game::shootCueBall(sf::Vector2i mousePosition)
 
     if (cueBall.isMoving())
     {
-        std::cout << "Ball is already moving\n";
         return;
     }
 

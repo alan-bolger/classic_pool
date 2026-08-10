@@ -25,6 +25,7 @@ class Game
     void processEvents();
     void update(float dt);
     void render();
+    void createRack();
     void shootCueBall(sf::Vector2i mousePosition);
 };
 

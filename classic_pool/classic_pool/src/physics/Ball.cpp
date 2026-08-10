@@ -88,6 +88,15 @@ void Ball::setVelocity(sf::Vector2f velocity)
 }
 
 /// <summary>
+/// Set the ball's colour.
+/// </summary>
+/// <param name="colour">The ball's new colour.</param>
+void Ball::setColour(sf::Color colour)
+{
+	shape.setFillColor(colour);
+}
+
+/// <summary>
 /// Get the ball's radius.
 /// </summary>
 /// <returns>The ball's radius as a float.
