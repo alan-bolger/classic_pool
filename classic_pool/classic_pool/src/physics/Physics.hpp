@@ -16,4 +16,5 @@ class Physics
     static void updateBall(Ball &ball, const Table &table, float dt);
     static void resolveBallCollision(Ball &a, Ball &b);
     static void resolveTableCollision(Ball &ball, const Table &table);
+    static void resolvePocketCollision(Ball &ball, const Table &table);
 };

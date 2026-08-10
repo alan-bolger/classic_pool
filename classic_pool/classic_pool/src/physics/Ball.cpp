@@ -20,6 +20,11 @@ Ball::Ball(sf::Vector2f position) : position(position)
 /// <param name="dt">Delta time.</param>
 void Ball::update(float dt)
 {
+    if (!active)
+    {
+        return;
+    }
+
     position += velocity * dt;
     velocity *= std::pow(friction, dt); // Velocity is multplied by friction every second
 
@@ -38,6 +43,11 @@ void Ball::update(float dt)
 /// <param name="target">The render target.</param>
 void Ball::render(sf::RenderTarget &target) const
 {
+    if (!active)
+    {
+        return;
+    }
+
     target.draw(shape);
 }
 
@@ -113,4 +123,22 @@ float Ball::getRadius() const
 bool Ball::isMoving() const
 {
     return velocity.length() > 0.0001f;
+}
+
+/// <summary>
+/// Check if the ball is active.
+/// </summary>
+/// <returns>True if the Ball instance is active, otherwise false.</returns>
+bool Ball::isActive() const
+{
+    return active;
+}
+
+/// <summary>
+/// Set the ball's active state.
+/// </summary>
+/// <param name="active">True for active, otherwise false.</param>
+void Ball::setActive(bool active)
+{
+	this->active = active;
 }

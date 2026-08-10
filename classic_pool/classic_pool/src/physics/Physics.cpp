@@ -1,5 +1,7 @@
 #include "Physics.hpp"
 
+#include <algorithm>
+
 /// <summary>
 /// Physics update.
 /// </summary>
@@ -11,7 +13,7 @@ void Physics::update(std::vector<Ball> &balls, const Table &table, float dt)
     // Update movement and cushion collisions
     for (Ball &ball : balls)
     {
-        if (!ball.isMoving())
+        if (!ball.isActive())
         {
             continue;
         }
@@ -22,8 +24,18 @@ void Physics::update(std::vector<Ball> &balls, const Table &table, float dt)
     // Check every unique pair of balls
     for (std::size_t i = 0; i < balls.size(); ++i)
     {
+        if (!balls[i].isActive())
+        {
+            continue;
+        }
+
         for (std::size_t j = i + 1; j < balls.size(); ++j)
         {
+            if (!balls[j].isActive())
+            {
+                continue;
+            }
+
             resolveBallCollision(balls[i], balls[j]);
         }
     }
@@ -37,7 +49,14 @@ void Physics::update(std::vector<Ball> &balls, const Table &table, float dt)
 /// <param name="dt">Delta time.</param>
 void Physics::updateBall(Ball &ball, const Table &table, float dt)
 {
-    ball.update(dt);
+    ball.update(dt);    
+    resolvePocketCollision(ball, table);
+
+    if (!ball.isActive())
+    {
+        return;
+    }
+
     resolveTableCollision(ball, table);
 }
 
@@ -97,56 +116,81 @@ void Physics::resolveBallCollision(Ball &a, Ball &b)
 /// <param name="table">A reference to the table.</param>
 void Physics::resolveTableCollision(Ball &ball, const Table &table)
 {
+    const float radius = ball.getRadius();
     sf::Vector2f position = ball.getPosition();
     sf::Vector2f velocity = ball.getVelocity();
-    const float radius = ball.getRadius();
-    const sf::Vector2f min = table.getMin();
-    const sf::Vector2f max = table.getMax();
 
-    // Left cushion
-    if (position.x - radius < min.x)
+    for (const Cushion &cushion : table.getCushions())
     {
-        position.x = min.x + radius;
+        const sf::Vector2f segment = cushion.end - cushion.start;
+        const float segmentLengthSquared = segment.dot(segment);
 
-        if (velocity.x < 0.0f)
+        if (segmentLengthSquared < 0.000001f)
         {
-            velocity.x = -velocity.x;
+            continue;
         }
-    }
 
-    // Right cushion
-    if (position.x + radius > max.x)
-    {
-        position.x = max.x - radius;
+        const sf::Vector2f toBall = position - cushion.start;
+        float t = toBall.dot(segment) / segmentLengthSquared;
 
-        if (velocity.x > 0.0f)
+        // Clamp to the actual line segment
+        t = std::clamp(t, 0.0f, 1.0f);
+
+        const sf::Vector2f closestPoint = cushion.start + segment * t;
+        const sf::Vector2f difference = position - closestPoint;
+        const float distance = difference.length();
+
+        if (distance >= radius)
         {
-            velocity.x = -velocity.x;
+            continue;
         }
-    }
 
-    // Top cushion
-    if (position.y - radius < min.y)
-    {
-        position.y = min.y + radius;
-
-        if (velocity.y < 0.0f)
+        if (distance < 0.000001f)
         {
-            velocity.y = -velocity.y;
+            continue;
         }
-    }
 
-    // Bottom cushion
-    if (position.y + radius > max.y)
-    {
-        position.y = max.y - radius;
+        const sf::Vector2f normal = difference / distance;
 
-        if (velocity.y > 0.0f)
+        // Push the ball out of the cushion
+        const float penetration = radius - distance;
+        position += normal * penetration;
+
+        // Only bounce if travelling into the cushion
+        const float velocityIntoCushion = velocity.dot(normal);
+
+        if (velocityIntoCushion < 0.0f)
         {
-            velocity.y = -velocity.y;
+            velocity -= 2.0f * velocityIntoCushion * normal;
         }
     }
 
     ball.setPosition(position);
     ball.setVelocity(velocity);
+}
+
+/// <summary>
+/// Resolve pocket collision for a single ball.
+/// </summary>
+/// <param name="ball">A reference to the ball.</param>
+/// <param name="table">A reference to the table.</param>
+void Physics::resolvePocketCollision(Ball &ball, const Table &table)
+{
+    if (!ball.isActive())
+    {
+        return;
+    }
+
+    for (const sf::Vector2f &pocket : table.getPockets())
+    {
+        const sf::Vector2f difference = ball.getPosition() - pocket;
+        const float distance = difference.length();
+        const float pocketThreshold = table.getPocketRadius() + ball.getRadius() * 0.35f;
+
+        if (distance < pocketThreshold)
+        {
+            ball.setActive(false);
+            return;
+        }
+    }
 }

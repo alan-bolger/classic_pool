@@ -20,6 +20,8 @@ class Ball
 	void setColour(sf::Color colour);
     float getRadius() const;
     bool isMoving() const;
+	bool isActive() const;
+	void setActive(bool active);
 
     private:
 
@@ -27,6 +29,7 @@ class Ball
     sf::Vector2f velocity;
     float radius = 0.0285f;
     float friction = 0.35f;
+	bool active = true;
     sf::CircleShape shape;
 };
 
