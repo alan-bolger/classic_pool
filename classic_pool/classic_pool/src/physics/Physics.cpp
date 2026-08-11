@@ -1,6 +1,7 @@
 #include "Physics.hpp"
 
 #include <algorithm>
+#include <cmath>
 
 /// <summary>
 /// Physics update.
@@ -10,33 +11,69 @@
 /// <param name="dt">Delta time.</param>
 void Physics::update(std::vector<Ball> &balls, const Table &table, float dt)
 {
-    // Update movement and cushion collisions
-    for (Ball &ball : balls)
+    // Find the fastest active ball
+    float maximumSpeed = 0.0f;
+
+    for (const Ball &ball : balls)
     {
         if (!ball.isActive())
         {
             continue;
         }
 
-        updateBall(ball, table, dt);
+        maximumSpeed = std::max(
+            maximumSpeed,
+            ball.getVelocity().length()
+        );
     }
 
-    // Check every unique pair of balls
-    for (std::size_t i = 0; i < balls.size(); ++i)
-    {
-        if (!balls[i].isActive())
-        {
-            continue;
-        }
+    // Keep each sub-step small enough that a ball
+    // can't travel a significant fraction of its
+    // diameter without collision checks
+    const float maximumStepDistance = 0.25f * balls[0].getRadius();
 
-        for (std::size_t j = i + 1; j < balls.size(); ++j)
+    int subSteps = 1;
+
+    if (maximumSpeed > 0.0f)
+    {
+        subSteps = static_cast<int>(std::ceil(maximumSpeed * dt / maximumStepDistance));
+    }
+
+    // Put a sensible upper limit on the amount of
+    // work we do during one physics tick
+    subSteps = std::clamp(subSteps, 1, 32);
+    const float subDt = dt / static_cast<float>(subSteps);
+
+    for (int step = 0; step < subSteps; ++step)
+    {
+        // Move balls and handle cushions/pockets
+        for (Ball &ball : balls)
         {
-            if (!balls[j].isActive())
+            if (!ball.isActive())
             {
                 continue;
             }
 
-            resolveBallCollision(balls[i], balls[j]);
+            updateBall(ball, table, subDt);
+        }
+
+        // Resolve ball-to-ball collisions
+        for (std::size_t i = 0; i < balls.size(); ++i)
+        {
+            if (!balls[i].isActive())
+            {
+                continue;
+            }
+
+            for (std::size_t j = i + 1; j < balls.size(); ++j)
+            {
+                if (!balls[j].isActive())
+                {
+                    continue;
+                }
+
+                resolveBallCollision(balls[i], balls[j]);
+            }
         }
     }
 }
