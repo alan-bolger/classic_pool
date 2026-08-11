@@ -7,16 +7,22 @@
 #include "physics/Ball.hpp"
 #include "game/Table.hpp"
 
-constexpr float MAX_PULLBACK = 0.50f;
-constexpr float MAX_SHOT_POWER = 3.0f;
+constexpr float MAX_PULLBACK = 0.5f;
+constexpr float MAX_SHOT_POWER = 10.0f;
 constexpr float MIN_CUE_STRIKE_SPEED = 0.15f;
 constexpr float MAX_CUE_STRIKE_SPEED = 12.0f;
+constexpr float MIN_STRIKE_DURATION = 0.50f;
+constexpr float MAX_STRIKE_DURATION = 0.08f;
+constexpr float CUE_REST_DISTANCE = 0.02f;
+constexpr float FOLLOW_THROUGH_DISTANCE = 0.02f;
+constexpr float FOLLOW_THROUGH_SPEED = 0.6f;
 
 enum class CueState
 {
     Hidden,
     Aiming,
-    Striking
+    Striking,
+    FollowThrough
 };
 
 class Game
@@ -43,6 +49,9 @@ class Game
     float cuePullback = 0.0f;
     float cueStrikeDistance = 0.15f;
     float cueStrikeSpeed = 4.0f;
+    float cueStrikeProgress = 0.0f;
+    float cueStrikeDuration = 0.0f;
+    float cueFollowThrough = 0.0f;
 
     void processEvents();
     void update(float dt);
@@ -51,6 +60,7 @@ class Game
     void updateAim();
     void updateCue(float dt);
     void beginStrike();
+	void strikeCueBall();
     void shootCueBall();
 };
 

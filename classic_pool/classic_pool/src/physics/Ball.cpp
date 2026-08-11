@@ -29,7 +29,7 @@ void Ball::update(float dt)
     velocity *= std::pow(friction, dt); // Velocity is multplied by friction every second
 
     // Stop ball if velocity is small enough
-    if (velocity.length() < 0.0001f)
+    if (velocity.length() < 0.001f)
     {
         velocity = { 0.0f, 0.0f };
     }
