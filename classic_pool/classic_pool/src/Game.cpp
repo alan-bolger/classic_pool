@@ -6,12 +6,6 @@
 #include <SFML/System/Clock.hpp>
 #include <algorithm>
 
-namespace
-{
-    constexpr float FIXED_DT = 1.0f / 120.0f;
-    constexpr float MAX_SHOT_POWER = 2.0f;
-}
-
 /// <summary>
 /// Game constructor.
 /// </summary>
@@ -19,6 +13,11 @@ Game::Game() : window(sf::VideoMode({ 1920, 1080 }), "Classic Pool"), view(sf::F
 {
     window.setView(view);
     createRack();
+
+	// Set up cue shape
+    cue.setSize({ 0.8f, 0.015f });
+    cue.setOrigin({ 0.0f, 0.0075f });
+    cue.setFillColor(sf::Color(180, 130, 70));
 }
 
 /// <summary>
@@ -36,6 +35,8 @@ void Game::run()
         // Avoid the simulation exploding after the window is dragged/minimized/etc
         accumulator += std::min(frameTime, 0.25f);
         processEvents();
+
+		float FIXED_DT = 1.0f / 120.0f;
 
         while (accumulator >= FIXED_DT)
         {
@@ -71,7 +72,21 @@ void Game::processEvents()
         {
             if (mousePressed->button == sf::Mouse::Button::Left)
             {
-                shootCueBall(mousePressed->position);
+                if (!balls[0].isMoving() && cueState == CueState::Hidden)
+                {
+                    cueState = CueState::Aiming;
+                }
+            }
+        }
+
+        if (const auto *mouseReleased = event->getIf<sf::Event::MouseButtonReleased>())
+        {
+            if (mouseReleased->button == sf::Mouse::Button::Left)
+            {
+                if (cueState == CueState::Aiming)
+                {
+                    beginStrike();
+                }
             }
         }
     }
@@ -84,6 +99,13 @@ void Game::processEvents()
 void Game::update(float dt)
 {
     Physics::update(balls, table, dt);
+
+    if (cueState == CueState::Aiming)
+    {
+        updateAim();
+    }
+
+    updateCue(dt);
 }
 
 /// <summary>
@@ -98,6 +120,11 @@ void Game::render()
     for (const Ball &ball : balls)
     {
         ball.render(window);
+    }
+
+    if (cueState != CueState::Hidden)
+    {
+        window.draw(cue);
     }
 
     window.display();
@@ -135,26 +162,195 @@ void Game::createRack()
 }
 
 /// <summary>
+/// Update the aim direction and shot power based on the mouse position.
+/// </summary>
+void Game::updateAim()
+{
+    const sf::Vector2i mousePixel =
+        sf::Mouse::getPosition(window);
+
+    const sf::Vector2f mouseWorld =
+        window.mapPixelToCoords(mousePixel);
+
+    const sf::Vector2f ballPosition =
+        balls[0].getPosition();
+
+    const sf::Vector2f mouseDirection =
+        mouseWorld - ballPosition;
+
+    if (mouseDirection.length() < 0.0001f)
+        return;
+
+    // Shot direction points away from the mouse.
+    aimDirection =
+        -mouseDirection.normalized();
+
+    // How far the mouse has been pulled behind
+    // the cue ball.
+    cuePullback =
+        std::clamp(
+        mouseDirection.length(),
+        0.0f,
+        MAX_PULLBACK
+        );
+
+    const float powerRatio =
+        cuePullback / MAX_PULLBACK;
+
+    shotPower =
+        powerRatio * MAX_SHOT_POWER;
+}
+
+/// <summary>
+/// Update the cue's position and rotation.
+/// </summary>
+/// <param name="dt">Delta time.</param>
+void Game::updateCue(float dt)
+{
+    if (cueState == CueState::Hidden)
+        return;
+
+    const sf::Vector2f ballPosition =
+        balls[0].getPosition();
+
+    const float angle =
+        std::atan2(
+        -aimDirection.y,
+        -aimDirection.x
+        );
+
+    cue.setRotation(
+        sf::radians(angle)
+    );
+
+    if (cueState == CueState::Aiming)
+    {
+        cue.setPosition(
+            ballPosition -
+            aimDirection *
+            (CUE_REST_DISTANCE + cuePullback)
+        );
+
+        return;
+    }
+
+    if (cueState == CueState::Striking)
+    {
+        cueStrikeProgress +=
+            dt / cueStrikeDuration;
+
+        const float progress =
+            std::clamp(
+            cueStrikeProgress,
+            0.0f,
+            1.0f
+            );
+
+        // Smooth acceleration:
+        // slow at the beginning, fast near impact.
+        const float easedProgress =
+            progress * progress;
+
+        cuePullback =
+            cuePullback * (1.0f - easedProgress);
+
+        cue.setPosition(
+            ballPosition -
+            aimDirection *
+            (CUE_REST_DISTANCE + cuePullback)
+        );
+
+        if (progress >= 1.0f)
+        {
+            cuePullback = 0.0f;
+
+            cue.setPosition(
+                ballPosition -
+                aimDirection * CUE_REST_DISTANCE
+            );
+
+            strikeCueBall();
+
+            cueState =
+                CueState::FollowThrough;
+
+            cueFollowThrough = 0.0f;
+        }
+
+        return;
+    }
+
+    if (cueState == CueState::FollowThrough)
+    {
+        cueFollowThrough +=
+            FOLLOW_THROUGH_SPEED * dt;
+
+        cue.setPosition(
+            ballPosition -
+            aimDirection *
+            (CUE_REST_DISTANCE -
+            cueFollowThrough)
+        );
+
+        if (cueFollowThrough >=
+            FOLLOW_THROUGH_DISTANCE)
+        {
+            cueState =
+                CueState::Hidden;
+        }
+    }
+}
+
+/// <summary>
+/// Initiates a cue strike.
+/// </summary>
+void Game::beginStrike()
+{
+    if (shotPower <= 0.0f)
+    {
+        cueState = CueState::Hidden;
+        return;
+    }
+
+    const float powerRatio =
+        std::clamp(
+        shotPower / MAX_SHOT_POWER,
+        0.0f,
+        1.0f
+        );
+
+    cueStrikeDuration =
+        MIN_STRIKE_DURATION +
+        (MAX_STRIKE_DURATION - MIN_STRIKE_DURATION) *
+        powerRatio;
+
+    cueStrikeProgress = 0.0f;
+
+    cueState = CueState::Striking;
+}
+
+/// <summary>
+/// Strike the cue ball with the cue stick.
+/// </summary>
+void Game::strikeCueBall()
+{
+    Ball &cueBall = balls[0];
+
+    cueBall.setVelocity(
+        aimDirection * shotPower
+    );
+
+    shotPower = 0.0f;
+    cuePullback = 0.0f;
+}
+
+/// <summary>
 /// Shoot the cue ball/take shot.
 /// </summary>
-/// <param name="mousePosition">The current mouse position.</param>
-void Game::shootCueBall(sf::Vector2i mousePosition)
+void Game::shootCueBall()
 {
 	Ball &cueBall = balls[0];
-
-    if (cueBall.isMoving())
-    {
-        return;
-    }
-
-    const sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePosition);
-    const sf::Vector2f direction = mouseWorld - cueBall.getPosition();
-
-    if (direction.length() < 0.0001f)
-    {
-        return;
-    }
-
-    const sf::Vector2f normalised = direction.normalized();
-    cueBall.setVelocity(normalised * MAX_SHOT_POWER);
+    cueBall.setVelocity(aimDirection * shotPower);
+    shotPower = 0.0f;
+	cuePullback = 0.0f;
 }
