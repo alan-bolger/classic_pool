@@ -249,6 +249,27 @@ void Game::updateCue(float dt)
 }
 
 /// <summary>
+/// Renders a translucent "ghost" circle for a ball at the contact point to visualize a collision. The ghost position is computed by projecting the ball out along the collision normal and uses the reference radius of balls[0].
+/// </summary>
+/// <param name="ballIndex">Index of the ball in the Game::balls container for which to render the ghost. Must refer to a valid element.</param>
+/// <param name="collisionPosition">World position of the collision contact used to compute the collision normal and determine the ghost's placement.</param>
+void Game::renderGhostBall(std::size_t ballIndex, sf::Vector2f collisionPosition)
+{
+    const Ball &objectBall = balls[ballIndex];
+    const sf::Vector2f collisionNormal = (objectBall.getPosition() - collisionPosition).normalized();
+    const sf::Vector2f ghostPosition = objectBall.getPosition() - collisionNormal * (balls[0].getRadius() + objectBall.getRadius());
+
+    sf::CircleShape ghost;
+    ghost.setRadius(balls[0].getRadius());
+    ghost.setOrigin({balls[0].getRadius(), balls[0].getRadius()});
+    ghost.setPosition(ghostPosition);
+    ghost.setFillColor(sf::Color(255, 255, 255, 25));
+    ghost.setOutlineColor(sf::Color(255, 255, 255, 180));
+    ghost.setOutlineThickness(0.006f);
+    window.draw(ghost);
+}
+
+/// <summary>
 /// Render the trajectory of the cue ball based on the current aim direction and shot power.
 /// </summary>
 void Game::renderTrajectory()
@@ -286,6 +307,8 @@ void Game::renderTrajectory()
             position += direction * ballDistance;
             cueTrajectory.append(sf::Vertex(position));
             hitBall = true;
+
+            renderGhostBall(ballIndex, position);
 
             // Work out the collision normal
             const sf::Vector2f collisionNormal = (balls[ballIndex].getPosition() - position).normalized();

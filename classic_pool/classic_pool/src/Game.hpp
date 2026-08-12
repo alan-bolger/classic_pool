@@ -65,6 +65,7 @@ class Game
     void createRack();
     void updateAim();
     void updateCue(float dt);
+    void renderGhostBall(std::size_t ballIndex, sf::Vector2f collisionPosition);
     void renderTrajectory();
     bool findCushionIntersection(sf::Vector2f position, sf::Vector2f direction, float maxDistance, float &distance, sf::Vector2f &normal) const;
     bool findBallIntersection(sf::Vector2f position, sf::Vector2f direction, float maxDistance, std::size_t &ballIndex, float &distance) const;
