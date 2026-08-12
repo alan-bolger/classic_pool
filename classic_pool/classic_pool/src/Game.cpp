@@ -316,7 +316,11 @@ void Game::renderTrajectory()
             // For an initially stationary object ball,
             // the object ball travels along the collision
             // normal
+            const sf::Vector2f objectPosition = balls[ballIndex].getPosition();
             sf::Vector2f objectDirection = collisionNormal;
+            float pocketDistance = TRAJECTORY_MAX_DISTANCE;
+            std::size_t pocketIndex = 0;
+            const bool hitPocket = findPocketIntersection(objectPosition, objectDirection, TRAJECTORY_MAX_DISTANCE, pocketIndex, pocketDistance);
 
             // The cue ball continues along the tangent
             sf::Vector2f cueDirection = direction - collisionNormal * direction.dot(collisionNormal);
@@ -332,11 +336,39 @@ void Game::renderTrajectory()
                 window.draw(cueAfterCollision);
             }
 
-            // Draw predicted object-ball path
-            sf::VertexArray objectTrajectory(sf::PrimitiveType::LineStrip);
-            const sf::Vector2f objectPosition = balls[ballIndex].getPosition();
-            objectTrajectory.append(sf::Vertex(objectPosition));
-            objectTrajectory.append(sf::Vertex(objectPosition + objectDirection * 0.75f));
+            sf::VertexArray objectTrajectory(
+                sf::PrimitiveType::LineStrip
+            );
+
+            objectTrajectory.append(
+                sf::Vertex(objectPosition)
+            );
+
+            if (hitPocket)
+            {
+                const sf::Vector2f pocketPosition =
+                    table.getPockets()[pocketIndex];
+
+                objectTrajectory.append(
+                    sf::Vertex(
+                    objectPosition +
+                    objectDirection * pocketDistance
+                )
+                );
+
+                renderPocketHighlight(
+                    pocketIndex
+                );
+            }
+            else
+            {
+                objectTrajectory.append(
+                    sf::Vertex(
+                    objectPosition +
+                    objectDirection * 0.75f
+                )
+                );
+            }
             window.draw(objectTrajectory);
 
             break;
@@ -365,6 +397,81 @@ void Game::renderTrajectory()
     }
 
     window.draw(cueTrajectory);
+}
+
+/// <summary>
+/// Renders a semi-transparent circular highlight over the specified pocket on the game table.
+/// </summary>
+/// <param name="pocketIndex">Index of the pocket to highlight. Must be a valid index into the table's pocket list (table.getPockets()).</param>
+void Game::renderPocketHighlight(std::size_t pocketIndex)
+{
+    const float radius = table.getPocketRadius();
+
+    sf::CircleShape highlight;
+    highlight.setRadius(radius * 1.15f);
+    highlight.setOrigin({ radius * 1.15f, radius * 1.15f });
+    highlight.setPosition(table.getPockets()[pocketIndex]);
+    highlight.setFillColor(sf::Color(255, 255, 255, 30));
+    highlight.setOutlineColor(sf::Color(255, 255, 255, 180));
+    highlight.setOutlineThickness(0.008f);
+
+    window.draw(highlight);
+}
+
+/// <summary>
+/// Searches along a ray from a position in a given direction for the nearest pocket capture intersection within a maximum distance.
+/// </summary>
+/// <param name="position">The start position (center of the object ball) in world coordinates from which the search begins.</param>
+/// <param name="direction">A unit (or directional) vector indicating the search direction.</param>
+/// <param name="maxDistance">The maximum distance to search along the direction. The search will not consider intersections beyond this distance.</param>
+/// <param name="pocketIndex">Output parameter (reference). On success, set to the index of the pocket that the ray intersects first.</param>
+/// <param name="distance">Output parameter (reference). On success, set to the distance from position to the intersection along direction. If no intersection is found it remains equal to maxDistance.</param>
+/// <returns>true if a pocket intersection was found within maxDistance (and pocketIndex and distance are updated), false otherwise.</returns>
+bool Game::findPocketIntersection(sf::Vector2f position, sf::Vector2f direction, float maxDistance, std::size_t &pocketIndex, float &distance) const
+{
+    bool found = false;    
+    distance = maxDistance;    
+    const float ballRadius = balls[0].getRadius();
+    
+    // How far the centre of the object ball needs
+    // to get into the pocket
+    const float pocketCaptureRadius = table.getPocketRadius() + ballRadius * 0.35f;
+    
+    for (std::size_t i = 0; i < table.getPockets().size(); ++i)
+    {
+        const sf::Vector2f toPocket = table.getPockets()[i] - position;    
+        const float projection = toPocket.dot(direction);
+    
+        if (projection <= 0.0f)
+        {
+            continue;
+        }
+    
+        const float closestDistanceSquared = toPocket.dot(toPocket) - projection * projection;    
+        const float captureRadiusSquared = pocketCaptureRadius * pocketCaptureRadius;
+    
+        if (closestDistanceSquared > captureRadiusSquared)
+        {
+            continue;
+        }
+    
+        const float offset = std::sqrt(captureRadiusSquared - closestDistanceSquared);    
+        const float intersectionDistance = projection - offset;
+    
+        if (intersectionDistance < 0.0f)
+        {
+            continue;
+        }
+    
+        if (intersectionDistance < distance)
+        {
+            distance = intersectionDistance;
+            pocketIndex = i;
+            found = true;
+        }
+    }
+    
+    return found;
 }
 
 /// <summary>
