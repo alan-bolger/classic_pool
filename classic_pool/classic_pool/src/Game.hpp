@@ -9,13 +9,19 @@
 
 constexpr float MAX_PULLBACK = 0.5f;
 constexpr float MAX_SHOT_POWER = 10.0f;
-constexpr float MIN_CUE_STRIKE_SPEED = 0.15f;
-constexpr float MAX_CUE_STRIKE_SPEED = 12.0f;
 constexpr float MIN_STRIKE_DURATION = 0.50f;
 constexpr float MAX_STRIKE_DURATION = 0.08f;
 constexpr float CUE_REST_DISTANCE = 0.02f;
 constexpr float FOLLOW_THROUGH_DISTANCE = 0.02f;
 constexpr float FOLLOW_THROUGH_SPEED = 0.6f;
+
+constexpr float TRAJECTORY_LENGTH = 3.0f;
+constexpr int TRAJECTORY_MAX_BOUNCES = 5;
+constexpr float TRAJECTORY_STEP = 0.01f;
+constexpr float TRAJECTORY_MAX_DISTANCE = 3.0f;
+constexpr float TRAJECTORY_LINE_WIDTH = 0.006f;
+constexpr float EPSILON = 0.00001f;
+
 
 enum class CueState
 {
@@ -59,6 +65,10 @@ class Game
     void createRack();
     void updateAim();
     void updateCue(float dt);
+    void renderGhostBall(std::size_t ballIndex, sf::Vector2f collisionPosition);
+    void renderTrajectory();
+    bool findCushionIntersection(sf::Vector2f position, sf::Vector2f direction, float maxDistance, float &distance, sf::Vector2f &normal) const;
+    bool findBallIntersection(sf::Vector2f position, sf::Vector2f direction, float maxDistance, std::size_t &ballIndex, float &distance) const;
     void beginStrike();
 	void strikeCueBall();
     void shootCueBall();
