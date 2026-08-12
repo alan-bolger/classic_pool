@@ -5,8 +5,10 @@
 /// <summary>
 /// Ball constructor.
 /// </summary>
-/// <param name="position">Set the ball's position.</param>
-Ball::Ball(sf::Vector2f position) : position(position)
+/// <param name="position">The ball's new position.</param>
+/// <param name="type">The ball type (Cue, Eight, Solid, Stripe).</param>
+/// <param name="number"></param>
+Ball::Ball(sf::Vector2f position, BallType type, int number) : position(position), type(type), number(number)
 {
     shape.setRadius(radius);
     shape.setOrigin({ radius, radius });
@@ -49,15 +51,6 @@ void Ball::render(sf::RenderTarget &target) const
     }
 
     target.draw(shape);
-}
-
-/// <summary>
-/// Apply impulse.
-/// </summary>
-/// <param name="impulse">The imulse value.</param>
-void Ball::applyImpulse(sf::Vector2f impulse)
-{
-    velocity += impulse;
 }
 
 /// <summary>
@@ -141,4 +134,22 @@ bool Ball::isActive() const
 void Ball::setActive(bool active)
 {
 	this->active = active;
+}
+
+/// <summary>
+/// Get the ball's type (Cue, Solid, Stripe, Eight).
+/// </summary>
+/// <returns>The ball type.</returns>
+BallType Ball::getType() const
+{
+    return type;
+}
+
+/// <summary>
+/// Get the ball's number (0 for cue ball, 1-15 for object balls).
+/// </summary>
+/// <returns>The ball's number.</returns>
+int Ball::getNumber() const
+{
+    return number;
 }

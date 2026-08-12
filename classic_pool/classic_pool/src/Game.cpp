@@ -72,7 +72,7 @@ void Game::processEvents()
         {
             if (mousePressed->button == sf::Mouse::Button::Left)
             {
-                if (!balls[0].isMoving() && cueState == CueState::Hidden)
+                if (!getCueBall().isMoving() && cueState == CueState::Hidden)
                 {
                     cueState = CueState::Aiming;
                 }
@@ -143,27 +143,41 @@ void Game::createRack()
     balls.clear();
 
     // Cue ball
-    balls.emplace_back(sf::Vector2f{ 0.71f, 0.71f });
-    constexpr int rows = 5;
-    const float spacing = 0.060f;
+    balls.emplace_back(sf::Vector2f{ 0.71f, 0.71f }, BallType::Cue, 0);
+    constexpr float spacing = 0.060f;
     const sf::Vector2f rackOrigin{ 1.85f, 0.71f };
+    int number = 1;
 
-    for (int row = 0; row < rows; ++row)
+    for (int row = 0; row < 5; ++row)
     {
         for (int column = 0; column <= row; ++column)
         {
+            BallType type;
+
+            if (number == 8)
+            {
+                type = BallType::Eight;
+            }
+            else if (number <= 7)
+            {
+                type = BallType::Solid;
+            }
+            else
+            {
+                type = BallType::Stripe;
+            }
+
             const float x = rackOrigin.x + row * spacing;
             const float y = rackOrigin.y + (column - row * 0.5f) * spacing;
-            balls.emplace_back(sf::Vector2f{ x, y });
+            balls.emplace_back(sf::Vector2f{ x, y }, type, number);
+            ++number;
         }
     }
 
-	balls[0].setColour(sf::Color::White);
-
-    for (std::size_t i = 1; i < balls.size(); ++i)
+    for (Ball &ball : balls)
     {
-        balls[i].setColour(sf::Color::Yellow);
-	}
+        ball.setColour(getBallColor(ball));
+    }
 }
 
 /// <summary>
@@ -173,7 +187,7 @@ void Game::updateAim()
 {
     const sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
     const sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixel);
-    const sf::Vector2f ballPosition = balls[0].getPosition();
+    const sf::Vector2f ballPosition = getCueBall().getPosition();
     const sf::Vector2f mouseDirection = mouseWorld - ballPosition;
 
     if (mouseDirection.length() < 0.0001f)
@@ -201,7 +215,7 @@ void Game::updateCue(float dt)
         return;
     }
 
-    const sf::Vector2f ballPosition = balls[0].getPosition();
+    const sf::Vector2f ballPosition = getCueBall().getPosition();
     const float angle = std::atan2(-aimDirection.y, -aimDirection.x);
     cue.setRotation(sf::radians(angle));
 
@@ -257,11 +271,11 @@ void Game::renderGhostBall(std::size_t ballIndex, sf::Vector2f collisionPosition
 {
     const Ball &objectBall = balls[ballIndex];
     const sf::Vector2f collisionNormal = (objectBall.getPosition() - collisionPosition).normalized();
-    const sf::Vector2f ghostPosition = objectBall.getPosition() - collisionNormal * (balls[0].getRadius() + objectBall.getRadius());
+    const sf::Vector2f ghostPosition = objectBall.getPosition() - collisionNormal * (getCueBall().getRadius() + objectBall.getRadius());
 
     sf::CircleShape ghost;
-    ghost.setRadius(balls[0].getRadius());
-    ghost.setOrigin({balls[0].getRadius(), balls[0].getRadius()});
+    ghost.setRadius(getCueBall().getRadius());
+    ghost.setOrigin({getCueBall().getRadius(), getCueBall().getRadius()});
     ghost.setPosition(ghostPosition);
     ghost.setFillColor(sf::Color(255, 255, 255, 25));
     ghost.setOutlineColor(sf::Color(255, 255, 255, 180));
@@ -284,7 +298,7 @@ void Game::renderTrajectory()
         return;
     }
 
-    const Ball &cueBall = balls[0];
+    const Ball &cueBall = getCueBall();
     sf::Vector2f position = cueBall.getPosition();
     sf::Vector2f direction = aimDirection;
     float remainingDistance = TRAJECTORY_MAX_DISTANCE;
@@ -336,39 +350,20 @@ void Game::renderTrajectory()
                 window.draw(cueAfterCollision);
             }
 
-            sf::VertexArray objectTrajectory(
-                sf::PrimitiveType::LineStrip
-            );
-
-            objectTrajectory.append(
-                sf::Vertex(objectPosition)
-            );
+            sf::VertexArray objectTrajectory(sf::PrimitiveType::LineStrip);
+            objectTrajectory.append(sf::Vertex(objectPosition));
 
             if (hitPocket)
             {
-                const sf::Vector2f pocketPosition =
-                    table.getPockets()[pocketIndex];
-
-                objectTrajectory.append(
-                    sf::Vertex(
-                    objectPosition +
-                    objectDirection * pocketDistance
-                )
-                );
-
-                renderPocketHighlight(
-                    pocketIndex
-                );
+                const sf::Vector2f pocketPosition = table.getPockets()[pocketIndex];
+                objectTrajectory.append(sf::Vertex(objectPosition + objectDirection * pocketDistance));
+                renderPocketHighlight(pocketIndex);
             }
             else
             {
-                objectTrajectory.append(
-                    sf::Vertex(
-                    objectPosition +
-                    objectDirection * 0.75f
-                )
-                );
+                objectTrajectory.append(sf::Vertex(objectPosition + objectDirection * 0.75f));
             }
+
             window.draw(objectTrajectory);
 
             break;
@@ -431,7 +426,7 @@ bool Game::findPocketIntersection(sf::Vector2f position, sf::Vector2f direction,
 {
     bool found = false;    
     distance = maxDistance;    
-    const float ballRadius = balls[0].getRadius();
+    const float ballRadius = getCueBall().getRadius();
     
     // How far the centre of the object ball needs
     // to get into the pocket
@@ -488,7 +483,7 @@ bool Game::findCushionIntersection(sf::Vector2f position, sf::Vector2f direction
     bool found = false;
     distance = maxDistance;
     const sf::Vector2f tableCentre = (table.getMin() + table.getMax()) * 0.5f;
-    const float ballRadius = balls[0].getRadius();
+    const float ballRadius = getCueBall().getRadius();
 
     for (const Cushion &cushion : table.getCushions())
     {
@@ -559,7 +554,7 @@ bool Game::findBallIntersection(sf::Vector2f position, sf::Vector2f direction, f
 {
     bool found = false;
     distance = maxDistance;
-    const float radius = balls[0].getRadius();
+    const float radius = getCueBall().getRadius();
     const float collisionRadius = radius * 2.0f;
 
     for (std::size_t i = 1; i < balls.size(); ++i)
@@ -628,7 +623,7 @@ void Game::beginStrike()
 /// </summary>
 void Game::strikeCueBall()
 {
-    Ball &cueBall = balls[0];
+    Ball &cueBall = getCueBall();
     cueBall.setVelocity(aimDirection * shotPower);
 
     shotPower = 0.0f;
@@ -640,8 +635,51 @@ void Game::strikeCueBall()
 /// </summary>
 void Game::shootCueBall()
 {
-	Ball &cueBall = balls[0];
+	Ball &cueBall = getCueBall();
     cueBall.setVelocity(aimDirection * shotPower);
     shotPower = 0.0f;
 	cuePullback = 0.0f;
+}
+
+/// <summary>
+/// Get the cueball.
+/// </summary>
+/// <returns>The cueball.</returns>
+Ball &Game::getCueBall()
+{
+    return balls[0];
+}
+
+/// <summary>
+/// Get the cueball (const version).
+/// </summary>
+/// <returns>The cueball.</returns>
+const Ball &Game::getCueBall() const
+{
+    return balls[0];
+}
+
+/// <summary>
+/// Returns the display color for a ball based on its BallType.
+/// </summary>
+/// <param name="ball">The ball whose type is used to determine the color.</param>
+/// <returns>An sf::Color for the ball's type: Cue -> White, Eight -> Black, Solid -> Yellow, Stripe -> White. Defaults to White if the type is unrecognized.</returns>
+sf::Color Game::getBallColor(const Ball &ball)
+{
+    switch (ball.getType())
+    {
+        case BallType::Cue:
+            return sf::Color::White;
+
+        case BallType::Eight:
+            return sf::Color::Black;
+
+        case BallType::Solid:
+            return sf::Color::Yellow;
+
+        case BallType::Stripe:
+            return sf::Color::White;
+    }
+
+    return sf::Color::White;
 }

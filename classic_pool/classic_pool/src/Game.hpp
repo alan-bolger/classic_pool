@@ -74,6 +74,9 @@ class Game
     void beginStrike();
 	void strikeCueBall();
     void shootCueBall();
+    Ball &getCueBall();
+    const Ball &getCueBall() const;
+    sf::Color getBallColor(const Ball &ball);
 };
 
 #endif // !GAME_HPP
