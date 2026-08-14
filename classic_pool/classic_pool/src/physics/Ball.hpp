@@ -4,15 +4,23 @@
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Font.hpp>
+
+enum class BallType
+{
+    Cue,
+    Solid,
+    Stripe,
+    Eight
+};
 
 class Ball
 {
     public:
 
-    explicit Ball(sf::Vector2f position);
+    explicit Ball(sf::Vector2f position, BallType type = BallType::Solid, int number = 0);
     void update(float dt);
     void render(sf::RenderTarget &target) const;
-    void applyImpulse(sf::Vector2f impulse);
     sf::Vector2f getPosition() const;
     sf::Vector2f getVelocity() const;
     void setPosition(sf::Vector2f position);
@@ -22,6 +30,9 @@ class Ball
     bool isMoving() const;
 	bool isActive() const;
 	void setActive(bool active);
+    BallType getType() const;
+    int getNumber() const;
+    void setFont(const sf::Font &font);
 
     private:
 
@@ -31,6 +42,9 @@ class Ball
     float friction = 0.35f;
 	bool active = true;
     sf::CircleShape shape;
+    BallType type;
+    int number;
+    const sf::Font *font = nullptr;
 };
 
 #endif // !BALL_HPP
