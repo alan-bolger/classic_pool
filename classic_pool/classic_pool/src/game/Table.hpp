@@ -12,6 +12,22 @@ struct Cushion
 	sf::Vector2f end;
 };
 
+struct PocketJaw
+{
+    sf::Vector2f start;
+    sf::Vector2f end;
+};
+
+struct Pocket
+{
+    sf::Vector2f position;
+
+    float radius;
+    float captureRadius;
+
+    bool containsBall(sf::Vector2f position, float ballRadius) const;
+};
+
 class Table
 {
     public:
@@ -23,6 +39,7 @@ class Table
     const std::array<sf::Vector2f, 6> &getPockets() const;
     float getPocketRadius() const;
     const std::array<Cushion, 6> &getCushions() const;
+    const std::array<PocketJaw, 12> &getPocketJaws() const;
 
     private:
 
@@ -32,6 +49,7 @@ class Table
 	std::array<Cushion, 6> cushions;
     float pocketRadius = 0.075f;
     sf::RectangleShape tableShape;
+    std::array<PocketJaw, 12> pocketJaws;
 };
 
 #endif // !TABLE_HPP

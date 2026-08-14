@@ -4,6 +4,7 @@
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Font.hpp>
 
 enum class BallType
 {
@@ -31,6 +32,7 @@ class Ball
 	void setActive(bool active);
     BallType getType() const;
     int getNumber() const;
+    void setFont(const sf::Font &font);
 
     private:
 
@@ -42,6 +44,7 @@ class Ball
     sf::CircleShape shape;
     BallType type;
     int number;
+    const sf::Font *font = nullptr;
 };
 
 #endif // !BALL_HPP

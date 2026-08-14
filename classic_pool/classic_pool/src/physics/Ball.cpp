@@ -153,3 +153,7 @@ int Ball::getNumber() const
 {
     return number;
 }
+
+void Ball::setFont(const sf::Font &font)
+{
+}

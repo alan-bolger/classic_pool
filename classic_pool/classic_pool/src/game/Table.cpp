@@ -1,5 +1,7 @@
 #include "Table.hpp"
 
+#include <cmath>
+
 /// <summary>
 /// Table constructor.
 /// </summary>
@@ -30,6 +32,34 @@ Table::Table()
 	cushions[3] = { { (min.x + max.x) * 0.5f + pocketGap, max.y }, { max.x - pocketGap, max.y } }; // Bottom-right
 	cushions[4] = { { min.x, min.y + pocketGap }, { min.x, max.y - pocketGap } }; // Left
 	cushions[5] = { { max.x, min.y + pocketGap }, { max.x, max.y - pocketGap } }; // Right
+
+    // Set pocket jaw positions
+    const float jawLength = pocketRadius * 1.25f;
+    const float centreX = (min.x + max.x) * 0.5f;
+
+    // Top-left corner
+    pocketJaws[0] = { { min.x + pocketGap, min.y }, { min.x + jawLength, min.y + jawLength } };
+    pocketJaws[1] = { { min.x, min.y + pocketGap }, { min.x + jawLength, min.y + jawLength } };
+
+    // Top-middle
+    pocketJaws[2] = { { centreX - pocketGap, min.y }, { centreX - jawLength, min.y + jawLength } };
+    pocketJaws[3] = { { centreX + pocketGap, min.y }, { centreX + jawLength, min.y + jawLength } };
+
+    // Top-right corner
+    pocketJaws[4] = { { max.x - pocketGap, min.y }, { max.x - jawLength, min.y + jawLength } };
+    pocketJaws[5] = { { max.x, min.y + pocketGap }, { max.x - jawLength, min.y + jawLength } };
+
+    // Bottom-left corner
+    pocketJaws[6] = { { min.x + pocketGap, max.y }, { min.x + jawLength, max.y - jawLength } };
+    pocketJaws[7] = { { min.x, max.y - pocketGap }, { min.x + jawLength, max.y - jawLength } };
+
+    // Bottom-middle
+    pocketJaws[8] = { { centreX - pocketGap, max.y }, { centreX - jawLength, max.y - jawLength } };
+    pocketJaws[9] = { { centreX + pocketGap, max.y }, { centreX + jawLength, max.y - jawLength } };
+
+    // Bottom-right corner
+    pocketJaws[10] = { { max.x - pocketGap, max.y }, { max.x - jawLength, max.y - jawLength } };
+    pocketJaws[11] = { { max.x, max.y - pocketGap }, { max.x - jawLength, max.y - jawLength } };
 }
 
 /// <summary>
@@ -40,6 +70,7 @@ void Table::render(sf::RenderTarget &target) const
 {
     target.draw(tableShape);
 
+    // Render pockets
     sf::CircleShape pocketShape;
     pocketShape.setRadius(pocketRadius);
     pocketShape.setOrigin({ pocketRadius, pocketRadius });
@@ -49,6 +80,25 @@ void Table::render(sf::RenderTarget &target) const
     {
         pocketShape.setPosition(position);
         target.draw(pocketShape);
+    }
+
+    // Render pocket jaws
+    for (const PocketJaw &jaw : pocketJaws)
+    {
+        const sf::Vector2f difference = jaw.end - jaw.start;
+        const float length = difference.length();
+
+        sf::RectangleShape jawShape;
+        jawShape.setSize({ length, 0.035f });
+        jawShape.setOrigin({ 0.0f, 0.0175f });
+        jawShape.setPosition(jaw.start);
+
+        const float angle = std::atan2(difference.y, difference.x);
+
+        jawShape.setRotation(sf::radians(angle));
+        jawShape.setFillColor(sf::Color(80, 55, 30));
+
+        target.draw(jawShape);
     }
 }
 
@@ -95,4 +145,13 @@ float Table::getPocketRadius() const
 const std::array<Cushion, 6> &Table::getCushions() const
 {
 	return cushions;
+}
+
+/// <summary>
+/// Returns a const reference to the array of PocketJaw objects associated with this Table.
+/// </summary>
+/// <returns>A const reference to the internal std::array<PocketJaw, 12> (Table::pocketJaws).</returns>
+const std::array<PocketJaw, 12> &Table::getPocketJaws() const
+{
+    return pocketJaws;
 }
