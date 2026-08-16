@@ -500,56 +500,78 @@ bool Game::findCushionIntersection(sf::Vector2f position, sf::Vector2f direction
     const sf::Vector2f tableCentre = (table.getMin() + table.getMax()) * 0.5f;
     const float ballRadius = getCueBall().getRadius();
 
-    for (const Cushion &cushion : table.getCushions())
+    // Raycast against the SAME rounded outlines the physics collides with,
+    // so the predicted bounce matches the ball's actual path. Each outline
+    // edge is offset inward by one ball radius along its inward normal
+    for (const std::vector<sf::Vector2f> &outline : table.getCushionOutlines())
     {
-        const sf::Vector2f segment = cushion.end - cushion.start;
-        const float segmentLength = segment.length();
+        const std::size_t pointCount = outline.size();
 
-        if (segmentLength < EPSILON)
+        if (pointCount < 2)
         {
             continue;
         }
 
-        const sf::Vector2f tangent = segment / segmentLength;
-        sf::Vector2f cushionNormal{ -tangent.y, tangent.x };
-
-        // Make the normal point INTO the table
-        const sf::Vector2f midpoint = (cushion.start + cushion.end) * 0.5f;
-
-        if (cushionNormal.dot(tableCentre - midpoint) < 0.0f)
+        for (std::size_t i = 0; i < pointCount; ++i)
         {
-            cushionNormal = -cushionNormal;
-        }
+            const sf::Vector2f a = outline[i];
+            const sf::Vector2f b = outline[(i + 1) % pointCount];
 
-        // The ball centre has to stay one radius
-        // inside the cushion
-        const sf::Vector2f offsetStart = cushion.start + cushionNormal * ballRadius;
-        const sf::Vector2f toStart = offsetStart - position;
-        const float cross = direction.x * tangent.y - direction.y * tangent.x;
+            const sf::Vector2f segment = b - a;
+            const float segmentLength = segment.length();
 
-        if (std::abs(cross) < EPSILON)
-        {
-            continue;
-        }
+            if (segmentLength < EPSILON)
+            {
+                continue;
+            }
 
-        const float rayDistance = (toStart.x * tangent.y - toStart.y * tangent.x) / cross;
-        const float segmentPosition = (toStart.x * direction.y - toStart.y * direction.x) / cross;
+            const sf::Vector2f tangent = segment / segmentLength;
+            sf::Vector2f edgeNormal{ -tangent.y, tangent.x };
 
-        if (rayDistance <= EPSILON)
-        {
-            continue;
-        }
+            // Make the normal point INTO the table (toward the play area)
+            const sf::Vector2f midpoint = (a + b) * 0.5f;
 
-        if (segmentPosition < 0.0f || segmentPosition > segmentLength)
-        {
-            continue;
-        }
+            if (edgeNormal.dot(tableCentre - midpoint) < 0.0f)
+            {
+                edgeNormal = -edgeNormal;
+            }
 
-        if (rayDistance < distance)
-        {
-            distance = rayDistance;
-            normal = cushionNormal;
-            found = true;
+            // Only edges facing the ball can be struck from the front
+            if (direction.dot(edgeNormal) >= 0.0f)
+            {
+                continue;
+            }
+
+            // Offset the edge inward by one radius so we intersect the path
+            // of the ball centre, not the cushion surface itself
+            const sf::Vector2f offsetStart = a + edgeNormal * ballRadius;
+            const sf::Vector2f toStart = offsetStart - position;
+            const float cross = direction.x * tangent.y - direction.y * tangent.x;
+
+            if (std::abs(cross) < EPSILON)
+            {
+                continue;
+            }
+
+            const float rayDistance = (toStart.x * tangent.y - toStart.y * tangent.x) / cross;
+            const float segmentPosition = (toStart.x * direction.y - toStart.y * direction.x) / cross;
+
+            if (rayDistance <= EPSILON)
+            {
+                continue;
+            }
+
+            if (segmentPosition < 0.0f || segmentPosition > segmentLength)
+            {
+                continue;
+            }
+
+            if (rayDistance < distance)
+            {
+                distance = rayDistance;
+                normal = edgeNormal;
+                found = true;
+            }
         }
     }
 
