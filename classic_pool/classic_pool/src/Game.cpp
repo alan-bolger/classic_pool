@@ -147,7 +147,19 @@ void Game::createRack()
 
     // Cue ball
     balls.emplace_back(sf::Vector2f{ 0.71f, 0.71f }, BallType::Cue, 0);
-    constexpr float spacing = 0.060f;
+
+    // Derive spacing from the ball size so the rack never overlaps when the
+    // radius changes. One diameter plus a small gap keeps balls just touching.
+    // Spacing is exactly one ball diameter so the rack is tightly packed
+    // with neighbouring balls just touching.
+    const float ballRadius = balls[0].getRadius();
+    const float spacing = ballRadius * 2.0f;
+
+    // In a triangular rack the horizontal distance between rows is the
+    // diameter times sqrt(3)/2, since each row nestles into the notch of
+    // the row in front rather than sitting a full diameter behind it.
+    const float rowSpacing = spacing * (std::sqrt(3.0f) * 0.5f);
+
     const sf::Vector2f rackOrigin{ 1.85f, 0.71f };
     int number = 1;
 
@@ -170,7 +182,7 @@ void Game::createRack()
                 type = BallType::Stripe;
             }
 
-            const float x = rackOrigin.x + row * spacing;
+            const float x = rackOrigin.x + row * rowSpacing;
             const float y = rackOrigin.y + (column - row * 0.5f) * spacing;
             balls.emplace_back(sf::Vector2f{ x, y }, type, number);
             ++number;
@@ -488,56 +500,78 @@ bool Game::findCushionIntersection(sf::Vector2f position, sf::Vector2f direction
     const sf::Vector2f tableCentre = (table.getMin() + table.getMax()) * 0.5f;
     const float ballRadius = getCueBall().getRadius();
 
-    for (const Cushion &cushion : table.getCushions())
+    // Raycast against the SAME rounded outlines the physics collides with,
+    // so the predicted bounce matches the ball's actual path. Each outline
+    // edge is offset inward by one ball radius along its inward normal
+    for (const std::vector<sf::Vector2f> &outline : table.getCushionOutlines())
     {
-        const sf::Vector2f segment = cushion.end - cushion.start;
-        const float segmentLength = segment.length();
+        const std::size_t pointCount = outline.size();
 
-        if (segmentLength < EPSILON)
+        if (pointCount < 2)
         {
             continue;
         }
 
-        const sf::Vector2f tangent = segment / segmentLength;
-        sf::Vector2f cushionNormal{ -tangent.y, tangent.x };
-
-        // Make the normal point INTO the table
-        const sf::Vector2f midpoint = (cushion.start + cushion.end) * 0.5f;
-
-        if (cushionNormal.dot(tableCentre - midpoint) < 0.0f)
+        for (std::size_t i = 0; i < pointCount; ++i)
         {
-            cushionNormal = -cushionNormal;
-        }
+            const sf::Vector2f a = outline[i];
+            const sf::Vector2f b = outline[(i + 1) % pointCount];
 
-        // The ball centre has to stay one radius
-        // inside the cushion
-        const sf::Vector2f offsetStart = cushion.start + cushionNormal * ballRadius;
-        const sf::Vector2f toStart = offsetStart - position;
-        const float cross = direction.x * tangent.y - direction.y * tangent.x;
+            const sf::Vector2f segment = b - a;
+            const float segmentLength = segment.length();
 
-        if (std::abs(cross) < EPSILON)
-        {
-            continue;
-        }
+            if (segmentLength < EPSILON)
+            {
+                continue;
+            }
 
-        const float rayDistance = (toStart.x * tangent.y - toStart.y * tangent.x) / cross;
-        const float segmentPosition = (toStart.x * direction.y - toStart.y * direction.x) / cross;
+            const sf::Vector2f tangent = segment / segmentLength;
+            sf::Vector2f edgeNormal{ -tangent.y, tangent.x };
 
-        if (rayDistance <= EPSILON)
-        {
-            continue;
-        }
+            // Make the normal point INTO the table (toward the play area)
+            const sf::Vector2f midpoint = (a + b) * 0.5f;
 
-        if (segmentPosition < 0.0f || segmentPosition > segmentLength)
-        {
-            continue;
-        }
+            if (edgeNormal.dot(tableCentre - midpoint) < 0.0f)
+            {
+                edgeNormal = -edgeNormal;
+            }
 
-        if (rayDistance < distance)
-        {
-            distance = rayDistance;
-            normal = cushionNormal;
-            found = true;
+            // Only edges facing the ball can be struck from the front
+            if (direction.dot(edgeNormal) >= 0.0f)
+            {
+                continue;
+            }
+
+            // Offset the edge inward by one radius so we intersect the path
+            // of the ball centre, not the cushion surface itself
+            const sf::Vector2f offsetStart = a + edgeNormal * ballRadius;
+            const sf::Vector2f toStart = offsetStart - position;
+            const float cross = direction.x * tangent.y - direction.y * tangent.x;
+
+            if (std::abs(cross) < EPSILON)
+            {
+                continue;
+            }
+
+            const float rayDistance = (toStart.x * tangent.y - toStart.y * tangent.x) / cross;
+            const float segmentPosition = (toStart.x * direction.y - toStart.y * direction.x) / cross;
+
+            if (rayDistance <= EPSILON)
+            {
+                continue;
+            }
+
+            if (segmentPosition < 0.0f || segmentPosition > segmentLength)
+            {
+                continue;
+            }
+
+            if (rayDistance < distance)
+            {
+                distance = rayDistance;
+                normal = edgeNormal;
+                found = true;
+            }
         }
     }
 
