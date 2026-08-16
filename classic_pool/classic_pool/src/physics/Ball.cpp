@@ -27,6 +27,33 @@ void Ball::update(float dt)
         return;
     }
 
+    // Sinking animation: shrink, fade, and glide into the pocket centre
+    if (sinking)
+    {
+        sinkProgress += dt / sinkDuration;
+        const float t = std::min(sinkProgress, 1.0f);
+
+        // Ease the ball toward the pocket centre
+        position += (sinkTarget - position) * std::min(1.0f, dt * 12.0f);
+
+        // Scale down to 40% and fade alpha to zero
+        const float scale = 1.0f - 0.3f * t;
+        shape.setScale({ scale, scale });
+
+        sf::Color faded = baseColour;
+        faded.a = static_cast<std::uint8_t>(255.0f * (1.0f - t));
+        shape.setFillColor(faded);
+        shape.setPosition(position);
+
+        if (t >= 1.0f)
+        {
+            sinking = false;
+            active = false;
+        }
+
+        return;
+    }
+
     position += velocity * dt;
     velocity *= std::pow(friction, dt); // Velocity is multplied by friction every second
 
@@ -77,7 +104,7 @@ sf::Vector2f Ball::getVelocity() const
 /// <param name="position">The ball's new position.</param>
 void Ball::setPosition(sf::Vector2f position)
 {
-    position = position;
+    this->position = position;
     shape.setPosition(position);
 }
 
@@ -96,7 +123,8 @@ void Ball::setVelocity(sf::Vector2f velocity)
 /// <param name="colour">The ball's new colour.</param>
 void Ball::setColour(sf::Color colour)
 {
-	shape.setFillColor(colour);
+    baseColour = colour;
+    shape.setFillColor(colour);
 }
 
 /// <summary>
@@ -156,4 +184,50 @@ int Ball::getNumber() const
 
 void Ball::setFont(const sf::Font &font)
 {
+
+}
+
+/// <summary>
+/// Check if the ball is playing its pocket-sinking animation.
+/// </summary>
+/// <returns>True while the ball is animating into a pocket.</returns>
+bool Ball::isSinking() const
+{
+    return sinking;
+}
+
+/// <summary>
+/// Begin the pocket-sinking animation toward the given pocket centre.
+/// </summary>
+/// <param name="pocketCentre">World position of the pocket centre.</param>
+void Ball::startSinking(sf::Vector2f pocketCentre)
+{
+    if (sinking)
+    {
+        return;
+    }
+
+    sinking = true;
+    sinkProgress = 0.0f;
+    sinkTarget = pocketCentre;
+    velocity = { 0.0f, 0.0f };
+}
+
+/// <summary>
+/// Restores the ball to a clean, playable state at the given position,
+/// clearing any sinking animation and resetting scale, colour and motion.
+/// </summary>
+/// <param name="newPosition">Where to place the ball (e.g. the head spot).</param>
+void Ball::reset(sf::Vector2f newPosition)
+{
+    active = true;
+    sinking = false;
+    sinkProgress = 0.0f;
+    velocity = { 0.0f, 0.0f };
+    position = newPosition;
+
+    // Undo the sinking animation's visual changes.
+    shape.setScale({ 1.0f, 1.0f });
+    shape.setFillColor(baseColour);
+    shape.setPosition(position);
 }

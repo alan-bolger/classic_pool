@@ -103,6 +103,8 @@ void Game::update(float dt)
 {
     Physics::update(balls, table, dt);
 
+    respawnCueBallIfPocketed();
+
     if (cueState == CueState::Aiming)
     {
         updateAim();
@@ -636,6 +638,28 @@ bool Game::findBallIntersection(sf::Vector2f position, sf::Vector2f direction, f
     }
 
     return found;
+}
+
+void Game::respawnCueBallIfPocketed()
+{
+    Ball &cue = getCueBall();
+
+    // Nothing to do if the cue ball is still in play or mid-animation.
+    if (cue.isActive() || cue.isSinking())
+    {
+        return;
+    }
+
+    // Wait until the table has settled before replacing it.
+    for (const Ball &ball : balls)
+    {
+        if (ball.isSinking() || ball.isMoving())
+        {
+            return;
+        }
+    }
+
+    cue.reset({ 0.71f, 0.71f });   // head-spot area
 }
 
 /// <summary>

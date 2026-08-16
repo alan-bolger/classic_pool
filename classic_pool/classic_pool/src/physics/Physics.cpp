@@ -60,14 +60,14 @@ void Physics::update(std::vector<Ball> &balls, const Table &table, float dt)
         // Resolve ball-to-ball collisions
         for (std::size_t i = 0; i < balls.size(); ++i)
         {
-            if (!balls[i].isActive())
+            if (!balls[i].isActive() || balls[i].isSinking())
             {
                 continue;
             }
 
             for (std::size_t j = i + 1; j < balls.size(); ++j)
             {
-                if (!balls[j].isActive())
+                if (!balls[j].isActive() || balls[j].isSinking())
                 {
                     continue;
                 }
@@ -86,10 +86,10 @@ void Physics::update(std::vector<Ball> &balls, const Table &table, float dt)
 /// <param name="dt">Delta time.</param>
 void Physics::updateBall(Ball &ball, const Table &table, float dt)
 {
-    ball.update(dt);    
+    ball.update(dt);
     resolvePocketCollision(ball, table);
 
-    if (!ball.isActive())
+    if (!ball.isActive() || ball.isSinking())
     {
         return;
     }
@@ -239,20 +239,22 @@ void Physics::resolveTableCollision(Ball &ball, const Table &table)
 /// <param name="table">A reference to the table.</param>
 void Physics::resolvePocketCollision(Ball &ball, const Table &table)
 {
-    if (!ball.isActive())
+    if (!ball.isActive() || ball.isSinking())
     {
         return;
     }
 
-    for (const sf::Vector2f &pocket : table.getPockets())
+    const std::array<sf::Vector2f, 6> &pockets = table.getPockets();
+
+    for (const sf::Vector2f &pocket : pockets)
     {
         const sf::Vector2f difference = ball.getPosition() - pocket;
         const float distance = difference.length();
-        const float pocketThreshold = table.getPocketRadius() + ball.getRadius() * 0.35f;
 
-        if (distance < pocketThreshold)
+        // Only capture once the ball's CENTRE crosses the pocket circle
+        if (distance < table.getPocketRadius())
         {
-            ball.setActive(false);
+            ball.startSinking(pocket);
             return;
         }
     }
