@@ -51,6 +51,10 @@ Table::Table()
     const float cornerPocketRadius = cornerMouth / std::sqrt(2.0f);
     const float sidePocketRadius = cornerPocketRadius;
 
+    // Capture radius matches the drawn pocket circle so pocketing lines up
+    // exactly with what the player sees.
+    pocketRadius = cornerPocketRadius;
+
     pockets[0] = { min.x, min.y };
     pockets[1] = { centreX, min.y + cushionWidth - sidePocketRadius };
     pockets[2] = { max.x, min.y };
@@ -261,10 +265,8 @@ void Table::render(sf::RenderTarget &target) const
     }
 
     // Pockets
-    const float renderUnitsPerInch = 2.84f / 100.0f;
-    const float cornerRadius = (5.0f * renderUnitsPerInch) / std::sqrt(2.0f);
-
-    const float sideRadius = cornerRadius;
+    const float cornerRadius = pocketRadius;
+    const float sideRadius = pocketRadius;
 
     sf::CircleShape cornerPocket;
     cornerPocket.setRadius(cornerRadius);
@@ -281,12 +283,12 @@ void Table::render(sf::RenderTarget &target) const
         if (i == 1 || i == 4)
         {
             sidePocket.setPosition(pockets[i]);
-            //target.draw(sidePocket);
+            target.draw(sidePocket);
         }
         else
         {
             cornerPocket.setPosition(pockets[i]);
-            //target.draw(cornerPocket);
+            target.draw(cornerPocket);
         }
     }
 }

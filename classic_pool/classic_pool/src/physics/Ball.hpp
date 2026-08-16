@@ -33,6 +33,9 @@ class Ball
     BallType getType() const;
     int getNumber() const;
     void setFont(const sf::Font &font);
+    bool isSinking() const;
+    void startSinking(sf::Vector2f pocketCentre);
+    void reset(sf::Vector2f newPosition);
 
     private:
 
@@ -41,6 +44,11 @@ class Ball
     float radius = 0.045f;   // ~15% larger than regulation for better top-down readability
     float friction = 0.35f;
 	bool active = true;
+    bool sinking = false;
+    float sinkProgress = 0.0f;
+    float sinkDuration = 0.30f;
+    sf::Vector2f sinkTarget;
+    sf::Color baseColour = sf::Color::White;
     sf::CircleShape shape;
     BallType type;
     int number;
