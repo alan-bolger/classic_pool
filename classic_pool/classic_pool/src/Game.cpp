@@ -11,7 +11,10 @@
 /// </summary>
 Game::Game() : window(sf::VideoMode({ 1920, 1080 }), "Classic Pool"), view(sf::FloatRect({ 0.0f, 0.0f }, { 2.84f, 1.42f }))
 {
+    view = sf::View(sf::FloatRect({ 0.0f, 0.0f }, { 3.8f, 2.1375f }));
+    view.setCenter({ 1.42f, 0.71f });
     window.setView(view);
+
     createRack();
 
 	// Set up cue shape
