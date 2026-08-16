@@ -157,43 +157,69 @@ void Physics::resolveTableCollision(Ball &ball, const Table &table)
     sf::Vector2f position = ball.getPosition();
     sf::Vector2f velocity = ball.getVelocity();
 
-    for (const Cushion &cushion : table.getCushions())
+    for (const std::vector<sf::Vector2f> &outline : table.getCushionOutlines())
     {
-        const sf::Vector2f segment = cushion.end - cushion.start;
-        const float segmentLengthSquared = segment.dot(segment);
+        const std::size_t pointCount = outline.size();
 
-        if (segmentLengthSquared < 0.000001f)
+        if (pointCount < 2)
         {
             continue;
         }
 
-        const sf::Vector2f toBall = position - cushion.start;
-        float t = toBall.dot(segment) / segmentLengthSquared;
+        // Find the closest point on the whole cushion outline (all edges,
+        // including the curved end segments).
+        float bestDistanceSquared = std::numeric_limits<float>::max();
+        sf::Vector2f bestPoint;
+        bool found = false;
 
-        // Clamp to the actual line segment
-        t = std::clamp(t, 0.0f, 1.0f);
+        for (std::size_t i = 0; i < pointCount; ++i)
+        {
+            const sf::Vector2f a = outline[i];
+            const sf::Vector2f b = outline[(i + 1) % pointCount];
 
-        const sf::Vector2f closestPoint = cushion.start + segment * t;
-        const sf::Vector2f difference = position - closestPoint;
-        const float distance = difference.length();
+            const sf::Vector2f segment = b - a;
+            const float segmentLengthSquared = segment.dot(segment);
 
-        if (distance >= radius)
+            if (segmentLengthSquared < 0.000001f)
+            {
+                continue;
+            }
+
+            const sf::Vector2f toBall = position - a;
+            float t = toBall.dot(segment) / segmentLengthSquared;
+            t = std::clamp(t, 0.0f, 1.0f);
+
+            const sf::Vector2f point = a + segment * t;
+            const sf::Vector2f difference = position - point;
+            const float distanceSquared = difference.dot(difference);
+
+            if (distanceSquared < bestDistanceSquared)
+            {
+                bestDistanceSquared = distanceSquared;
+                bestPoint = point;
+                found = true;
+            }
+        }
+
+        if (!found)
         {
             continue;
         }
 
-        if (distance < 0.000001f)
+        const float distance = std::sqrt(bestDistanceSquared);
+
+        if (distance >= radius || distance < 0.000001f)
         {
             continue;
         }
 
-        const sf::Vector2f normal = difference / distance;
+        const sf::Vector2f normal = (position - bestPoint) / distance;
 
-        // Push the ball out of the cushion
+        // Push the ball out of the cushion.
         const float penetration = radius - distance;
         position += normal * penetration;
 
-        // Only bounce if travelling into the cushion
+        // Only bounce if travelling into the cushion.
         const float velocityIntoCushion = velocity.dot(normal);
 
         if (velocityIntoCushion < 0.0f)

@@ -147,7 +147,19 @@ void Game::createRack()
 
     // Cue ball
     balls.emplace_back(sf::Vector2f{ 0.71f, 0.71f }, BallType::Cue, 0);
-    constexpr float spacing = 0.060f;
+
+    // Derive spacing from the ball size so the rack never overlaps when the
+    // radius changes. One diameter plus a small gap keeps balls just touching.
+    // Spacing is exactly one ball diameter so the rack is tightly packed
+    // with neighbouring balls just touching.
+    const float ballRadius = balls[0].getRadius();
+    const float spacing = ballRadius * 2.0f;
+
+    // In a triangular rack the horizontal distance between rows is the
+    // diameter times sqrt(3)/2, since each row nestles into the notch of
+    // the row in front rather than sitting a full diameter behind it.
+    const float rowSpacing = spacing * (std::sqrt(3.0f) * 0.5f);
+
     const sf::Vector2f rackOrigin{ 1.85f, 0.71f };
     int number = 1;
 
@@ -170,7 +182,7 @@ void Game::createRack()
                 type = BallType::Stripe;
             }
 
-            const float x = rackOrigin.x + row * spacing;
+            const float x = rackOrigin.x + row * rowSpacing;
             const float y = rackOrigin.y + (column - row * 0.5f) * spacing;
             balls.emplace_back(sf::Vector2f{ x, y }, type, number);
             ++number;

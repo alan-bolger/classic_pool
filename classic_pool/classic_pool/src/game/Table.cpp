@@ -208,6 +208,20 @@ Table::Table()
 
     pocketJaws[11].start = pocketGeometry[5].mouthRight;
     pocketJaws[11].end = pocketGeometry[5].throatRight;
+
+    // =========================================================
+    // CUSHION COLLISION OUTLINES
+    //
+    // Precompute the exact rendered outline for each cushion so physics
+    // collides against the same rounded polygon that is drawn.
+    // =========================================================
+    const float outlineCornerRadius = cushionWidth * 0.45f;
+    const int outlineArcSegments = 6;
+
+    for (std::size_t i = 0; i < cushions.size(); ++i)
+    {
+        cushionOutlines[i] = buildCushionOutline(cushions[i], outlineCornerRadius, outlineArcSegments);
+    }
 }
 
 
@@ -224,79 +238,33 @@ void Table::render(sf::RenderTarget &target) const
     target.draw(tableShape);
 
     // Pockets
-    for (const PocketGeometry &pocket : pocketGeometry)
+    //for (const PocketGeometry &pocket : pocketGeometry)
+    //{
+    //    sf::VertexArray shape(sf::PrimitiveType::TriangleStrip, 4);
+
+    //    shape[0].position = pocket.mouthLeft;
+    //    shape[1].position = pocket.mouthRight;
+    //    shape[2].position = pocket.throatLeft;
+    //    shape[3].position = pocket.throatRight;
+
+    //    shape[0].color = sf::Color::Black;
+    //    shape[1].color = sf::Color::Black;
+    //    shape[2].color = sf::Color::Black;
+    //    shape[3].color = sf::Color::Black;
+
+    //    target.draw(shape);
+    //}
+
+    // Cushion bodies (rounded ends) - drawn from the shared collision outline.
+    for (const std::vector<sf::Vector2f> &outline : cushionOutlines)
     {
-        sf::VertexArray shape(sf::PrimitiveType::TriangleStrip, 4);
-
-        shape[0].position = pocket.mouthLeft;
-        shape[1].position = pocket.mouthRight;
-        shape[2].position = pocket.throatLeft;
-        shape[3].position = pocket.throatRight;
-
-        shape[0].color = sf::Color::Black;
-        shape[1].color = sf::Color::Black;
-        shape[2].color = sf::Color::Black;
-        shape[3].color = sf::Color::Black;
+        sf::ConvexShape shape;
+        shape.setPointCount(outline.size());
+        for (std::size_t i = 0; i < outline.size(); ++i)
+            shape.setPoint(i, outline[i]);
+        shape.setFillColor(sf::Color(25, 80, 40));
 
         target.draw(shape);
-    }
-
-    // Cushion bodies (rounded ends).
-    const float cushionCornerRadius = cushionWidth * 0.45f;
-    const int arcSegments = 6;
-
-    for (const Cushion &cushion : cushions)
-    {
-        // Ordered outline of the trapezoid (clockwise).
-        const std::array<sf::Vector2f, 4> corners = {
-            cushion.topLeft,
-            cushion.topRight,
-            cushion.bottomRight,
-            cushion.bottomLeft
-        };
-
-        // Build a rounded outline by filleting every corner.
-        std::vector<sf::Vector2f> outline;
-        outline.reserve(corners.size() * (arcSegments + 1));
-
-        for (std::size_t i = 0; i < corners.size(); ++i)
-        {
-            const sf::Vector2f prev = corners[(i + corners.size() - 1) % corners.size()];
-            const sf::Vector2f curr = corners[i];
-            const sf::Vector2f next = corners[(i + 1) % corners.size()];
-
-            auto shorten = [&](const sf::Vector2f &from) -> sf::Vector2f
-            {
-                sf::Vector2f dir = from - curr;
-                const float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-                const float r = std::min(cushionCornerRadius, len * 0.5f);
-                if (len > 0.0f)
-                    dir = { dir.x / len, dir.y / len };
-                return { curr.x + dir.x * r, curr.y + dir.y * r };
-            };
-
-            const sf::Vector2f entry = shorten(prev);
-            const sf::Vector2f exit = shorten(next);
-
-            // Quadratic arc from entry -> exit, bulging toward the corner.
-            for (int s = 0; s <= arcSegments; ++s)
-            {
-                const float t = static_cast<float>(s) / static_cast<float>(arcSegments);
-                const float u = 1.0f - t;
-                outline.push_back({
-                    u * u * entry.x + 2.0f * u * t * curr.x + t * t * exit.x,
-                    u * u * entry.y + 2.0f * u * t * curr.y + t * t * exit.y
-                    });
-            }
-
-            sf::ConvexShape shape;
-            shape.setPointCount(outline.size());
-            for (std::size_t i = 0; i < outline.size(); ++i)
-                shape.setPoint(i, outline[i]);
-            shape.setFillColor(sf::Color(25, 80, 40));
-
-            target.draw(shape);
-        }
     }
 
     // Pockets.
@@ -330,7 +298,6 @@ void Table::render(sf::RenderTarget &target) const
     }
 }
 
-
 // ======================================================
 // GETTERS
 // ======================================================
@@ -346,13 +313,16 @@ sf::Vector2f Table::getMax() const
     return max;
 }
 
-
 const std::array<sf::Vector2f, 6> &
 Table::getPockets() const
 {
     return pockets;
 }
 
+float Table::getPocketRadius() const
+{
+    return pocketRadius;
+}
 
 const std::array<Cushion, 6> &
 Table::getCushions() const
@@ -360,6 +330,11 @@ Table::getCushions() const
     return cushions;
 }
 
+const std::array<std::vector<sf::Vector2f>, 6> &
+Table::getCushionOutlines() const
+{
+    return cushionOutlines;
+}
 
 const std::array<PocketJaw, 12> &
 Table::getPocketJaws() const
@@ -367,8 +342,51 @@ Table::getPocketJaws() const
     return pocketJaws;
 }
 
-
-float Table::getPocketRadius() const
+// Builds the rounded trapezoid outline for a cushion. This is the single
+// source of truth for both rendering and collision, so the shape the player
+// sees is exactly the shape the ball collides with.
+std::vector<sf::Vector2f> Table::buildCushionOutline(const Cushion &cushion, float cornerRadius, int arcSegments)
 {
-    return pocketRadius;
+    const std::array<sf::Vector2f, 4> corners = {
+        cushion.topLeft,
+        cushion.topRight,
+        cushion.bottomRight,
+        cushion.bottomLeft
+    };
+
+    std::vector<sf::Vector2f> outline;
+    outline.reserve(corners.size() * (arcSegments + 1));
+
+    for (std::size_t i = 0; i < corners.size(); ++i)
+    {
+        const sf::Vector2f prev = corners[(i + corners.size() - 1) % corners.size()];
+        const sf::Vector2f curr = corners[i];
+        const sf::Vector2f next = corners[(i + 1) % corners.size()];
+
+        auto shorten = [&](const sf::Vector2f &from) -> sf::Vector2f
+        {
+            sf::Vector2f dir = from - curr;
+            const float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+            const float r = std::min(cornerRadius, len * 0.5f);
+            if (len > 0.0f)
+                dir = { dir.x / len, dir.y / len };
+            return { curr.x + dir.x * r, curr.y + dir.y * r };
+        };
+
+        const sf::Vector2f entry = shorten(prev);
+        const sf::Vector2f exit = shorten(next);
+
+        // Quadratic arc from entry -> exit, bulging toward the corner.
+        for (int s = 0; s <= arcSegments; ++s)
+        {
+            const float t = static_cast<float>(s) / static_cast<float>(arcSegments);
+            const float u = 1.0f - t;
+            outline.push_back({
+                u * u * entry.x + 2.0f * u * t * curr.x + t * t * exit.x,
+                u * u * entry.y + 2.0f * u * t * curr.y + t * t * exit.y
+                });
+        }
+    }
+
+    return outline;
 }
