@@ -5,11 +5,16 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/ConvexShape.hpp>
 
 struct Cushion
 {
-    sf::Vector2f start;
+	sf::Vector2f start;
 	sf::Vector2f end;
+    sf::Vector2f topLeft;
+    sf::Vector2f topRight;
+    sf::Vector2f bottomRight;
+    sf::Vector2f bottomLeft;
 };
 
 struct PocketJaw
@@ -18,14 +23,20 @@ struct PocketJaw
     sf::Vector2f end;
 };
 
-struct Pocket
+struct PocketGeometry
 {
-    sf::Vector2f position;
+    sf::Vector2f mouthLeft;
+    sf::Vector2f mouthRight;
+    sf::Vector2f throatLeft;
+    sf::Vector2f throatRight;
+};
 
-    float radius;
-    float captureRadius;
-
-    bool containsBall(sf::Vector2f position, float ballRadius) const;
+struct RailGeometry
+{
+    sf::Vector2f noseStart;
+    sf::Vector2f noseEnd;
+    sf::Vector2f jawStart;
+    sf::Vector2f jawEnd;
 };
 
 class Table
@@ -45,11 +56,17 @@ class Table
 
     sf::Vector2f min;
     sf::Vector2f max;
+    float pocketOpening = 0.18f;
+    float jawDepth = 0.065f;
+    float cushionWidth = 0.045f;
+    float railWidth = 0.08f;
     std::array<sf::Vector2f, 6> pockets;
 	std::array<Cushion, 6> cushions;
     float pocketRadius = 0.075f;
     sf::RectangleShape tableShape;
     std::array<PocketJaw, 12> pocketJaws;
+    std::array<float, 6> pocketRadii;
+    std::array<PocketGeometry, 6> pocketGeometry;
 };
 
 #endif // !TABLE_HPP
