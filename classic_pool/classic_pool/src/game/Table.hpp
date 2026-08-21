@@ -54,6 +54,7 @@ class Table
     const std::array<Cushion, 6> &getCushions() const;
     const std::array<std::vector<sf::Vector2f>, 6> &getCushionOutlines() const;
     const std::array<PocketJaw, 12> &getPocketJaws() const;
+    sf::Vector2f getFootSpot() const;
 
     private:
 
@@ -68,9 +69,13 @@ class Table
     std::array<std::vector<sf::Vector2f>, 6> cushionOutlines;
     float pocketRadius = 0.075f;
     sf::RectangleShape tableShape;
+    sf::RectangleShape headString;
+    sf::CircleShape headSpot;
+    sf::CircleShape footSpot;
     std::array<PocketJaw, 12> pocketJaws;
     std::array<float, 6> pocketRadii;
     std::array<PocketGeometry, 6> pocketGeometry;
+    sf::Vector2f footSpotPosition;
 
     static std::vector<sf::Vector2f> buildCushionOutline(const Cushion &cushion, float cornerRadius, int arcSegments);
 };
