@@ -26,7 +26,7 @@ Table::Table()
     const float cornerShelf = 1.75f * unitsPerInch;
     const float sideShelf = 0.25f * unitsPerInch;
 
-    // Angled facing setback (how far the nose edge is pulled back from the mouth at each cushion end). Corners cut back ~45 degrees; sides shallower
+    // Angled facing setback (how far the nose edge is pulled back from the mouth at each cushion end). Corners cut back 45 degrees; sides shallower
     const float cornerFacing = cushionWidth * 1.35f;
     const float sideFacing = cushionWidth * 0.7f;
 
@@ -212,6 +212,25 @@ Table::Table()
     {
         cushionOutlines[i] = buildCushionOutline(cushions[i], outlineCornerRadius, outlineArcSegments);
     }
+
+    // Table markings
+    const float headStringX = min.x + (max.x - min.x) * 0.25f;
+    const float spotRadius = 0.008f;
+
+    headString.setSize({ 0.003f, max.y - min.y });
+    headString.setPosition({ headStringX, min.y });
+    headString.setFillColor(sf::Color(210, 210, 190));
+
+    headSpot.setRadius(spotRadius);
+    headSpot.setOrigin({ spotRadius, spotRadius });
+    headSpot.setPosition({ headStringX, (min.y + max.y) * 0.5f });
+    headSpot.setFillColor(sf::Color(210, 210, 190));
+
+    footSpot.setRadius(spotRadius);
+    footSpot.setOrigin({ spotRadius, spotRadius });
+    footSpotPosition = { 1.85f, (min.y + max.y) * 0.5f };
+    footSpot.setPosition(footSpotPosition);
+    footSpot.setFillColor(sf::Color(210, 210, 190));
 }
 
 /// <summary>
@@ -229,6 +248,9 @@ void Table::render(sf::RenderTarget &target) const
 
     // Playing surface
     target.draw(tableShape);
+    target.draw(headString);
+    target.draw(headSpot);
+    target.draw(footSpot);
 
     // Pockets
     for (const PocketGeometry &pocket : pocketGeometry)
@@ -354,6 +376,15 @@ const std::array<std::vector<sf::Vector2f>, 6> &Table::getCushionOutlines() cons
 const std::array<PocketJaw, 12> &Table::getPocketJaws() const
 {
     return pocketJaws;
+}
+
+/// <summary>
+/// Retrieves the table's foot spot position.
+/// </summary>
+/// <returns>An sf::Vector2f containing the foot spot position (returned by value).</returns>
+sf::Vector2f Table::getFootSpot() const
+{
+	return footSpotPosition;
 }
 
 /// <summary>

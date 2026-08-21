@@ -41,7 +41,7 @@ class Ball
 
     sf::Vector2f position;
     sf::Vector2f velocity;
-    float radius = 0.045f;   // ~15% larger than regulation for better top-down readability
+    float radius = 0.05f;   // ~15% larger than regulation for better top-down readability
     float friction = 0.35f;
 	bool active = true;
     bool sinking = false;

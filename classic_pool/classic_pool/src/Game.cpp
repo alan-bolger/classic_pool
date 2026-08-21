@@ -162,7 +162,7 @@ void Game::createRack()
     // the row in front rather than sitting a full diameter behind it.
     const float rowSpacing = spacing * (std::sqrt(3.0f) * 0.5f);
 
-    const sf::Vector2f rackOrigin{ 1.85f, 0.71f };
+    sf::Vector2f rackOrigin = table.getFootSpot();
     int number = 1;
 
     for (int row = 0; row < 5; ++row)
@@ -640,6 +640,9 @@ bool Game::findBallIntersection(sf::Vector2f position, sf::Vector2f direction, f
     return found;
 }
 
+/// <summary>
+/// If the cue ball has been pocketed and no balls are sinking or moving, reset the cue ball to its default position; otherwise do nothing.
+/// </summary>
 void Game::respawnCueBallIfPocketed()
 {
     Ball &cue = getCueBall();
@@ -659,7 +662,7 @@ void Game::respawnCueBallIfPocketed()
         }
     }
 
-    cue.reset({ 0.71f, 0.71f });   // head-spot area
+    cue.reset({ 0.71f, 0.71f });
 }
 
 /// <summary>
